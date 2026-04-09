@@ -193,65 +193,10 @@ class Ghost(EntitySprite):
 
     def __init__(self, start_position: tuple[int, int]) -> None:
         super().__init__(start_position)
-        self.order_i = 0
     
     def update(self, **kwargs):
-        # TODO: improve this ai
-        if self.rect.colliderect(kwargs["pacman"].rect):
-            sys.exit(0)
-
-        xdif = self.rect.x - kwargs["pacman"].rect.x
-        ydif = self.rect.y - kwargs["pacman"].rect.y
-        order = ['l', 'r', 'u', 'd']
-
-        if xdif == 0:
-            if ydif > 0:
-                order = ['u', 'l', 'r', 'd']
-            elif ydif < 0:
-                order = ['d', 'l', 'r', 'u']
-            else:
-                sys.exit(0) # Pac-Man stirbt
-        
-        if ydif == 0:
-            if xdif > 0:
-                order = ['l', 'u', 'd', 'r']
-            elif xdif < 0:
-                order = ['r', 'u', 'u', 'l']
-            else:
-                sys.exit(0) # Pac-Man stirbt
-
-        if xdif != 0:
-            if ydif > 0:
-                if xdif > ydif:
-                    order = ['l', 'u', 'd', 'r']
-                else: #elif xdif < ydif
-                    order = ['u', 'l', 'r', 'd']
-            if ydif < 0:
-                if xdif > -ydif:
-                    order = ['l', 'd', 'u', 'r']
-                else: #elif xdif < -ydif
-                    order = ['d', 'l', 'r', 'u']
-        elif xdif < 0:
-            if ydif > 0:
-                if -xdif > ydif:
-                    order = ['r', 'u', 'd', 'l']
-                else: #elif -xdif < ydif
-                    order = ['u', 'r', 'l', 'd']
-            if ydif < 0:
-                if -xdif > -ydif:
-                    order = ['r', 'd', 'u', 'l']
-                else: #elif -xdif < -ydif
-                    order = ['d', 'r', 'l', 'u']
-
-        # TODO: fix bug
-        if self.stuck and self.order_i < 3:
-            self.order_i += 1
-        elif self.stuck > 0:
-            self.order_i -= 1
-        
-        self.try_direction = order[self.order_i]       
-        print(order, self.try_direction)
-
+        # TODO: create ai
+        # ...
         self.movement(kwargs["windowsize"], kwargs["mapblocks"], kwargs["dt"])
 
 

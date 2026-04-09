@@ -28,8 +28,8 @@ gamemap.load_all(HEIGHT, WIDTH, mapcontent, mapblocks, blocks_group, pellets_gro
 # Bewegliche Sprites laden
 pacman = sprites.Pacman((const.UNIT*14, const.UNIT*23))
 pacman_direction = sprites.PacmanDirection()  # Pfeil, der die ausgewählte Richtung für Pacman anzeigt
-ghost1 = sprites.Ghost((const.UNIT*14, const.UNIT))
-entities_group.add(pacman, pacman_direction, ghost1)
+# ghost1 = sprites.Ghost((const.UNIT*14, const.UNIT))
+entities_group.add(pacman, pacman_direction)
 
 # Fenster erstellen
 SCREEN = pygame.display.set_mode((PXWIDTH, PXHEIGHT))
