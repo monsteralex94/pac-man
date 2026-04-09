@@ -1,0 +1,3 @@
+FPS = 60
+UNIT = 16
+SPEED = UNIT * 12
