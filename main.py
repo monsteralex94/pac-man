@@ -6,26 +6,25 @@ import pygame
 pygame.init()
 
 # Map auslesen
-mapname = "map.txt"
-with open(mapname) as mapfile:
+with open("map.txt") as mapfile:
     mapcontent = mapfile.read().split('\n')
 
-# Fenstergröße anhand der Größe der Map bestimmen (in Blöcken und Pixlen)
+# Fenstergröße anhand der Größe der Map bestimmen (in Blöcken und Pixeln)
 WIDTH, HEIGHT = len(mapcontent[0]), len(mapcontent)
 PXWIDTH, PXHEIGHT = WIDTH * const.UNIT, HEIGHT * const.UNIT
 
 # 2D-Liste für Wandblöcke
 mapblocks = [[False] * WIDTH for _ in range(HEIGHT)]
 
-# Sprite-Gruppen
+# Statische Sprites aus dem Map-Inhalt laden
 blocks_group = pygame.sprite.Group()
 pellets_group = pygame.sprite.Group()
-entities_group = pygame.sprite.Group()
 
-# Statische Sprites aus dem Map-Inhalt laden
 gamemap.load_all(HEIGHT, WIDTH, mapcontent, mapblocks, blocks_group, pellets_group)
 
 # Bewegliche Sprites laden
+entities_group = pygame.sprite.Group()
+
 pacman = sprites.Pacman((const.UNIT*14, const.UNIT*23))
 pacman_direction = sprites.PacmanDirection()  # Pfeil, der die ausgewählte Richtung für Pacman anzeigt
 # ghost1 = sprites.Ghost((const.UNIT*14, const.UNIT))
