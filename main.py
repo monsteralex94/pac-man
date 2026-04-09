@@ -17,7 +17,7 @@ PXWIDTH, PXHEIGHT = WIDTH * const.UNIT, HEIGHT * const.UNIT
 blocks_group = pygame.sprite.Group()
 pellets_group = pygame.sprite.Group()
 
-gamemap.load_all(HEIGHT, WIDTH, mapcontent, blocks_group, pellets_group)
+gamemap.load_all(WIDTH, HEIGHT, mapcontent, blocks_group, pellets_group)
 
 # Bewegliche Sprites laden
 entities_group = pygame.sprite.Group()
@@ -58,7 +58,7 @@ while running:
     
     # Pellets neu laden, wenn alle gegessen wurden
     if len(pellets_group) == 0:
-        gamemap.load_pellets(HEIGHT, WIDTH, mapcontent, pellets_group)
+        gamemap.load_pellets(WIDTH, HEIGHT, mapcontent, pellets_group)
     
     # Schwarzer Hintergrund
     SCREEN.fill((0, 0, 0))

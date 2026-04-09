@@ -1,7 +1,7 @@
 import const
 import sprites
 
-def load_all(height, width, mapcontent, blocks_group, pellets_group):
+def load_all(width, height, mapcontent, blocks_group, pellets_group):
     """Alle statischen Sprites aus dem Map-Inhalt laden"""
 
     for y in range(height):
@@ -9,17 +9,14 @@ def load_all(height, width, mapcontent, blocks_group, pellets_group):
             block = mapcontent[y][x]
 
             if block == '#':
-                bl = sprites.Block((x * const.UNIT, y * const.UNIT))
-                blocks_group.add(bl)
+                blocks_group.add(sprites.Block((x * const.UNIT, y * const.UNIT)))
             elif block == '.':
-                p = sprites.NormalPellet((x * const.UNIT, y * const.UNIT))
-                pellets_group.add(p)
+                pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
             elif block == ':':
-                p = sprites.PowerPellet((x * const.UNIT, y * const.UNIT))
-                pellets_group.add(p)
+                pellets_group.add(sprites.PowerPellet((x * const.UNIT, y * const.UNIT)))
 
 
-def load_pellets(height, width, mapcontent, pellets_group):
+def load_pellets(width, height, mapcontent, pellets_group):
     """Nur Pellets aus dem Map-Inhalt laden"""
     
     for y in range(height):
@@ -27,8 +24,6 @@ def load_pellets(height, width, mapcontent, pellets_group):
             block = mapcontent[y][x]
 
             if block == '.':
-                p = sprites.NormalPellet((x * const.UNIT, y * const.UNIT))
-                pellets_group.add(p)
+                pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
             elif block == ':':
-                p = sprites.PowerPellet((x * const.UNIT, y * const.UNIT))
-                pellets_group.add(p)
+                pellets_group.add(sprites.PowerPellet((x * const.UNIT, y * const.UNIT)))
