@@ -61,29 +61,17 @@ class EntitySprite(pygame.sprite.Sprite):
         self.try_direction = 'l'
 
         self.stuck = False
+    
 
+    def collision_with_wall(self, rect, blocks_group) -> Optional[pygame.Rect]:
+        for sprite in blocks_group:
+            if sprite.rect.colliderect(rect):
+                return sprite.rect
 
-    def collision_with_wall(self, rect, mapblocks) -> Optional[pygame.Rect]:
-        """Falls das Sprite eine Wand berührt, wird der Rect des berührten Blocks zurückgegeben"""
-
-        # Durchgehen aller Blöcke der Map
-        for y in range(len(mapblocks)):
-            for x in range(len(mapblocks[0])):
-                if not mapblocks[y][x]:
-                    continue
-
-                # Bestimmen der Position und Größe des aktuellen Blocks
-                tile_rect = pygame.Rect(x * const.UNIT, y * const.UNIT, const.UNIT, const.UNIT)
-
-                # Prüfen, ob dieser berührt wird
-                if tile_rect.colliderect(rect):
-                    # Rückgabe des Rect
-                    return tile_rect
-        
-        # Keine Rückgabe
         return None
 
-    def movement(self, windowsize, mapblocks, dt) -> None:
+
+    def movement(self, windowsize, blocks_group, dt) -> None:
         """Kontrolliert die Steuerung mit curr_direction und try_direction"""
 
         # Animation: Wenn der Timer überschritten wird, wechselt das Frame der Animation
@@ -116,7 +104,7 @@ class EntitySprite(pygame.sprite.Sprite):
             if self.try_direction in ('l', 'r'):
                 for y in range(min(0, int(dy)), max(0, int(dy))+1):
                     new_rect = self.rect.move(try_dx, y)
-                    tile_rect = self.collision_with_wall(new_rect, mapblocks)
+                    tile_rect = self.collision_with_wall(new_rect, blocks_group)
                     if not tile_rect:
                         self.curr_direction = self.try_direction
                         dx = try_dx
@@ -126,7 +114,7 @@ class EntitySprite(pygame.sprite.Sprite):
             elif self.try_direction in ('u', 'd'):
                 for x in range(min(0, int(dx)), max(0, int(dx))+1):
                     new_rect = self.rect.move(x, try_dy)
-                    tile_rect = self.collision_with_wall(new_rect, mapblocks)
+                    tile_rect = self.collision_with_wall(new_rect, blocks_group)
                     if not tile_rect:
                         self.curr_direction = self.try_direction
                         dy = try_dy
@@ -139,7 +127,7 @@ class EntitySprite(pygame.sprite.Sprite):
         self.rect.left = int(self.float_pos.x)   # Als ganze Zahl (für das Zeichnen)
 
         # Anpassung von kleinen Abweichungen von dem Gitter
-        tile_rect = self.collision_with_wall(self.rect, mapblocks)
+        tile_rect = self.collision_with_wall(self.rect, blocks_group)
         if tile_rect:
             if dx > 0:
                 self.rect.right = tile_rect.left
@@ -152,7 +140,7 @@ class EntitySprite(pygame.sprite.Sprite):
         self.rect.top = int(self.float_pos.y)   # Als ganze Zahl (für das Zeichnen)
 
         # Anpassung von kleinen Abweichungen von dem Gitter
-        tile_rect = self.collision_with_wall(self.rect, mapblocks)
+        tile_rect = self.collision_with_wall(self.rect, blocks_group)
         if tile_rect:
             if dy > 0:
                 self.rect.bottom = tile_rect.top
@@ -178,7 +166,7 @@ class EntitySprite(pygame.sprite.Sprite):
         """Update-Funktion des Entity Sprites"""
 
         # Bewegung wird ausgeführt
-        self.movement(kwargs["windowsize"], kwargs["mapblocks"], kwargs["dt"])
+        self.movement(kwargs["windowsize"], kwargs["blocks_group"], kwargs["dt"])
 
 
 class Pacman(EntitySprite):
@@ -197,7 +185,7 @@ class Ghost(EntitySprite):
     def update(self, **kwargs):
         # TODO: create ai
         # ...
-        self.movement(kwargs["windowsize"], kwargs["mapblocks"], kwargs["dt"])
+        self.movement(kwargs["windowsize"], kwargs["blocks_group"], kwargs["dt"])
 
 
 class PacmanDirection(pygame.sprite.Sprite):

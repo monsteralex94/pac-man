@@ -13,14 +13,11 @@ with open("map.txt") as mapfile:
 WIDTH, HEIGHT = len(mapcontent[0]), len(mapcontent)
 PXWIDTH, PXHEIGHT = WIDTH * const.UNIT, HEIGHT * const.UNIT
 
-# 2D-Liste für Wandblöcke
-mapblocks = [[False] * WIDTH for _ in range(HEIGHT)]
-
 # Statische Sprites aus dem Map-Inhalt laden
 blocks_group = pygame.sprite.Group()
 pellets_group = pygame.sprite.Group()
 
-gamemap.load_all(HEIGHT, WIDTH, mapcontent, mapblocks, blocks_group, pellets_group)
+gamemap.load_all(HEIGHT, WIDTH, mapcontent, blocks_group, pellets_group)
 
 # Bewegliche Sprites laden
 entities_group = pygame.sprite.Group()
@@ -70,8 +67,8 @@ while running:
     pellets_group.update(pacman)
     # Bewegliche Sprites updaten: KI der Ghosts usw...
     entities_group.update(windowsize=(PXWIDTH, PXHEIGHT),
-                          dt=dt, mapblocks=mapblocks, pacman=pacman,
-                          pacman_direction=pacman_direction)
+                          dt=dt, blocks_group=blocks_group,
+                          pacman=pacman, pacman_direction=pacman_direction)
     
     # Alle Sprites zeichnen
     blocks_group.draw(SCREEN)
