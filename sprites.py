@@ -1,7 +1,6 @@
 import const
 import pygame
 from typing import Optional
-import sys
 
 class StaticSprite(pygame.sprite.Sprite):
     """Elternklasse für statische Sprites"""
@@ -24,14 +23,12 @@ class Block(StaticSprite):
 class EntitySprite(pygame.sprite.Sprite):
     """Elternklasse für bewegliche Sprites"""
 
-    def __init__(self, start_position: tuple[int, int]) -> None:
+    def __init__(self, start_position: tuple[int, int], animation_textures: tuple[str, str]) -> None:
         super().__init__()
 
-        # TODO: texture allgemein machen
-
         # Frames für die Animation
-        frame0 = pygame.transform.scale(pygame.image.load("textures/pacman/0.png"), (const.UNIT*2, const.UNIT*2))
-        frame1 = pygame.transform.scale(pygame.image.load("textures/pacman/1.png"), (const.UNIT*2, const.UNIT*2))
+        frame0 = pygame.transform.scale(pygame.image.load(animation_textures[0]), (const.UNIT*2, const.UNIT*2))
+        frame1 = pygame.transform.scale(pygame.image.load(animation_textures[1]), (const.UNIT*2, const.UNIT*2))
 
         # Rotationswinkel in Grad für jede Richtung
         rotations = {'r': 0, 'u': 90, 'l': 180, 'd': 270}
@@ -51,16 +48,14 @@ class EntitySprite(pygame.sprite.Sprite):
         # Tatsächliche Position des Sprites als Gleitkommazahlen (linke obere Ecke)
         self.float_pos = pygame.Vector2(start_position)
 
-        # Timer und Textur für Animation
-        self.texture_timer = 0
-        self.texture_num = 0
-
         # Richtung, in die Pac-Man gerade geht
         self.curr_direction = 'l'
         # Richtung, in die Pac-Man gehen will (wegen Benutzereingabe)
         self.try_direction = 'l'
 
-        self.stuck = False
+        # Timer und Texturzahl für Animation
+        self.texture_timer = 0
+        self.texture_num = 0
     
 
     def collision_with_wall(self, rect, blocks_group) -> Optional[pygame.Rect]:
@@ -74,15 +69,20 @@ class EntitySprite(pygame.sprite.Sprite):
     def movement(self, windowsize, blocks_group, dt) -> None:
         """Kontrolliert die Steuerung mit curr_direction und try_direction"""
 
-        # Animation: Wenn der Timer überschritten wird, wechselt das Frame der Animation
+        ########### ANIMATION
+        # Wenn der Timer überschritten wird, wechselt das Frame der Animation
         # und der Timer wird zurückgesetzt
         if self.texture_timer > 0.2:
             self.texture_timer = 0
             self.texture_num = int(not self.texture_num)
-        
-        old_pos = self.float_pos.copy()
 
-        # Bewegung in jede Richtung für den aktuellen Frame (x- und y-Komponenten)
+        # Auswählen der Textur innerhalb der Animation und Aktualisierung des Timers
+        self.image = self.frames[self.texture_num][self.curr_direction]
+        self.texture_timer += dt
+
+
+        ########### BEWEGUNG
+        # Zurückzulegende Strecke in jede Richtung für den aktuellen Frame (x- und y-Komponenten)
         dmap = {
             'r': (const.SPEED * dt, 0),
             'u': (0, -const.SPEED * dt),
@@ -102,20 +102,21 @@ class EntitySprite(pygame.sprite.Sprite):
 
             # Nächste Bewegung in x-Richtung?
             if self.try_direction in ('l', 'r'):
+
+                # Prüfen aller Positionsänderungen in y-Richtung von 0 bis dy (egal ob positiv oder negativ)
                 for y in range(min(0, int(dy)), max(0, int(dy))+1):
-                    new_rect = self.rect.move(try_dx, y)
-                    tile_rect = self.collision_with_wall(new_rect, blocks_group)
-                    if not tile_rect:
+
+                    # Wenn Pac-Man bei der aktuellen Positionsänderung keine Wand berührt,
+                    # werden dx und dy angepasst
+                    if not self.collision_with_wall(self.rect.move(try_dx, y), blocks_group):
                         self.curr_direction = self.try_direction
                         dx = try_dx
                         dy = y
             
-            # Nächste Bewegung in y-Richtung?
+            # Genauso wie davor, nur mit x und y vertauscht
             elif self.try_direction in ('u', 'd'):
                 for x in range(min(0, int(dx)), max(0, int(dx))+1):
-                    new_rect = self.rect.move(x, try_dy)
-                    tile_rect = self.collision_with_wall(new_rect, blocks_group)
-                    if not tile_rect:
+                    if not self.collision_with_wall(self.rect.move(x, try_dy), blocks_group):
                         self.curr_direction = self.try_direction
                         dy = try_dy
                         dx = x
@@ -126,7 +127,7 @@ class EntitySprite(pygame.sprite.Sprite):
         self.float_pos.x += dx    # intern als Gleitkommazahl (tatsächliche Position)
         self.rect.left = int(self.float_pos.x)   # Als ganze Zahl (für das Zeichnen)
 
-        # Anpassung von kleinen Abweichungen von dem Gitter
+        # Anpassung von Abweichungen
         tile_rect = self.collision_with_wall(self.rect, blocks_group)
         if tile_rect:
             if dx > 0:
@@ -139,7 +140,7 @@ class EntitySprite(pygame.sprite.Sprite):
         self.float_pos.y += dy    # intern als Gleitkommazahl (tatsächliche Position)
         self.rect.top = int(self.float_pos.y)   # Als ganze Zahl (für das Zeichnen)
 
-        # Anpassung von kleinen Abweichungen von dem Gitter
+        # Anpassung von Abweichungen
         tile_rect = self.collision_with_wall(self.rect, blocks_group)
         if tile_rect:
             if dy > 0:
@@ -156,12 +157,7 @@ class EntitySprite(pygame.sprite.Sprite):
         # Neue, angepasste Position
         self.rect.topleft = (int(self.float_pos.x), int(self.float_pos.y))
 
-        self.stuck = old_pos == self.float_pos
 
-        # Auswählen der Textur innerhalb der Animation und Aktualisierung des Timers
-        self.image = self.frames[self.texture_num][self.curr_direction]
-        self.texture_timer += dt
-    
     def update(self, **kwargs):
         """Update-Funktion des Entity Sprites"""
 
@@ -173,14 +169,14 @@ class Pacman(EntitySprite):
     "Klasse für Pac-Man"
 
     def __init__(self, start_position: tuple[int, int]) -> None:
-        super().__init__(start_position)
+        super().__init__(start_position, ("textures/pacman/0.png", "textures/pacman/1.png"))
 
 
 class Ghost(EntitySprite):
     "Klasse für Geist"
 
     def __init__(self, start_position: tuple[int, int]) -> None:
-        super().__init__(start_position)
+        super().__init__(start_position, ("textures/pacman/0.png", "textures/pacman/1.png"))
     
     def update(self, **kwargs):
         # TODO: create ai
