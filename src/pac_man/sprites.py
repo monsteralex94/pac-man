@@ -1,4 +1,4 @@
-import const
+from . import const
 import pygame
 from typing import Optional
 
@@ -7,7 +7,7 @@ class StaticSprite(pygame.sprite.Sprite):
 
     def __init__(self, position: tuple[int, int], texture: str, scale: tuple[int, int], rotate: float):
         super().__init__()
-        self.image = pygame.image.load(f"textures/{texture}.png")
+        self.image = pygame.image.load(f"{const.CWD}/textures/{texture}.png")
         self.image = pygame.transform.scale(self.image, scale)
         self.image = pygame.transform.rotate(self.image, rotate * 90)
         self.rect = self.image.get_rect(topleft=position)
@@ -169,14 +169,14 @@ class Pacman(EntitySprite):
     "Klasse für Pac-Man"
 
     def __init__(self, start_position: tuple[int, int]) -> None:
-        super().__init__(start_position, ("textures/pacman/0.png", "textures/pacman/1.png"))
+        super().__init__(start_position, (f"{const.CWD}/textures/pacman/0.png", f"{const.CWD}/textures/pacman/1.png"))
 
 
 class Ghost(EntitySprite):
     "Klasse für Geist"
 
     def __init__(self, start_position: tuple[int, int]) -> None:
-        super().__init__(start_position, ("textures/pacman/0.png", "textures/pacman/1.png"))
+        super().__init__(start_position, (f"{const.CWD}/textures/pacman/0.png", f"{const.CWD}/textures/pacman/1.png"))
     
     def update(self, **kwargs):
         # TODO: create ai
@@ -189,7 +189,7 @@ class PacmanDirection(pygame.sprite.Sprite):
 
     def __init__(self) -> None:
         super().__init__()
-        frame = pygame.transform.scale(pygame.image.load(f"textures/pacman/direction.png"), (const.UNIT*6, const.UNIT*6))
+        frame = pygame.transform.scale(pygame.image.load(f"{const.CWD}/textures/pacman/direction.png"), (const.UNIT*6, const.UNIT*6))
 
         rotations = {'r': 0, 'u': 90, 'l': 180, 'd': 270}
         self.frames = {d: pygame.transform.rotate(frame, angle) for d, angle in rotations.items()}

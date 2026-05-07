@@ -1,5 +1,5 @@
-import const
-import sprites
+from . import const
+from . import sprites
 
 def load_all(width, height, mapcontent, blocks_group, pellets_group):
     """Alle statischen Sprites aus dem Map-Inhalt laden"""

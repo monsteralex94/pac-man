@@ -1,12 +1,12 @@
-import const
-import sprites
-import gamemap
+from . import const
+from . import sprites
+from . import gamemap
 
 import pygame
 pygame.init()
 
 # Map auslesen
-with open("map.txt") as mapfile:
+with open(f"{const.CWD}/map.txt") as mapfile:
     mapcontent = mapfile.read().split('\n')
 
 # Fenstergröße anhand der Größe der Map bestimmen (in Blöcken und Pixeln)
