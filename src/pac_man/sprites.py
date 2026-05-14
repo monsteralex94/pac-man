@@ -1,6 +1,7 @@
 from . import const
 import pygame
 from typing import Optional
+from importlib.resources import files, as_file
 
 
 dmap = {
@@ -32,7 +33,8 @@ class StaticSprite(pygame.sprite.Sprite):
 
     def __init__(self, position: tuple[int, int], texture: str, scale: tuple[int, int], rotate: float):
         super().__init__()
-        self.image = pygame.image.load(f"{const.CWD}/textures/{texture}.png")
+        with as_file(files("pac_man").joinpath(f"resources/{texture}.png")) as path:
+            self.image = pygame.image.load(path)
         self.image = pygame.transform.scale(self.image, scale)
         self.image = pygame.transform.rotate(self.image, rotate * 90)
         self.rect = self.image.get_rect(topleft=position)
@@ -159,8 +161,10 @@ class Pacman(EntitySprite):
         super().__init__(start_position)
 
         # Frames für die Animation
-        frame0 = pygame.transform.scale(pygame.image.load(f"{const.CWD}/textures/pacman/0.png"), (const.UNIT*2, const.UNIT*2))
-        frame1 = pygame.transform.scale(pygame.image.load(f"{const.CWD}/textures/pacman/1.png"), (const.UNIT*2, const.UNIT*2))
+        with as_file(files("pac_man").joinpath(f"resources/pacman/0.png")) as path0:
+            with as_file(files("pac_man").joinpath(f"resources/pacman/1.png")) as path1:
+                frame0 = pygame.transform.scale(pygame.image.load(path0), (const.UNIT*2, const.UNIT*2))
+                frame1 = pygame.transform.scale(pygame.image.load(path1), (const.UNIT*2, const.UNIT*2))
 
         # Rotationswinkel in Grad für jede Richtung
         rotations = {'r': 0, 'u': 90, 'l': 180, 'd': 270}
@@ -194,9 +198,11 @@ class Ghost1(EntitySprite):
 
     def __init__(self, start_position: tuple[int, int]) -> None:
         super().__init__(start_position)
-        self.frames = \
-            pygame.transform.scale(pygame.image.load(f"{const.CWD}/textures/ghosts/red0.png"), (const.UNIT*2, const.UNIT*2)), \
-            pygame.transform.scale(pygame.image.load(f"{const.CWD}/textures/ghosts/red1.png"), (const.UNIT*2, const.UNIT*2))
+
+        with as_file(files("pac_man").joinpath(f"resources/ghosts/red0.png")) as path0:
+            with as_file(files("pac_man").joinpath(f"resources/ghosts/red1.png")) as path1:
+                self.frames = pygame.transform.scale(pygame.image.load(path0), (const.UNIT*2, const.UNIT*2)), \
+                    pygame.transform.scale(pygame.image.load(path1), (const.UNIT*2, const.UNIT*2))
         
         self.image = self.frames[0]
         self.dir_switch_timer = 0.0
@@ -236,9 +242,11 @@ class Ghost2(EntitySprite):
 
     def __init__(self, start_position: tuple[int, int]) -> None:
         super().__init__(start_position)
-        self.frames = \
-            pygame.transform.scale(pygame.image.load(f"{const.CWD}/textures/ghosts/pink0.png"), (const.UNIT*2, const.UNIT*2)), \
-            pygame.transform.scale(pygame.image.load(f"{const.CWD}/textures/ghosts/pink1.png"), (const.UNIT*2, const.UNIT*2))
+
+        with as_file(files("pac_man").joinpath(f"resources/ghosts/pink0.png")) as path0:
+            with as_file(files("pac_man").joinpath(f"resources/ghosts/pink1.png")) as path1:
+                self.frames = pygame.transform.scale(pygame.image.load(path0), (const.UNIT*2, const.UNIT*2)), \
+                    pygame.transform.scale(pygame.image.load(path1), (const.UNIT*2, const.UNIT*2))
         
         self.image = self.frames[0]
         self.dir_switch_timer = 0.0
@@ -280,7 +288,9 @@ class PacmanDirection(pygame.sprite.Sprite):
 
     def __init__(self) -> None:
         super().__init__()
-        frame = pygame.transform.scale(pygame.image.load(f"{const.CWD}/textures/pacman/direction.png"), (const.UNIT*6, const.UNIT*6))
+
+        with as_file(files("pac_man").joinpath(f"resources/pacman/direction.png")) as path:
+            frame = pygame.transform.scale(pygame.image.load(path), (const.UNIT*6, const.UNIT*6))
 
         rotations = {'r': 0, 'u': 90, 'l': 180, 'd': 270}
         self.frames = {d: pygame.transform.rotate(frame, angle) for d, angle in rotations.items()}

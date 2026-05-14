@@ -2,6 +2,8 @@ from . import const
 from . import sprites
 from . import gamemap
 
+from importlib.resources import files
+
 import pygame
 pygame.init()
 pygame.font.init()
@@ -9,8 +11,7 @@ pygame.font.init()
 font = pygame.font.SysFont("Liberation Mono", const.UNIT * 2)
 
 # Map auslesen
-with open(f"{const.CWD}/map.txt") as mapfile:
-    mapcontent = mapfile.read().split('\n')
+mapcontent = files("pac_man").joinpath("resources/map.txt").read_text().split("\n")
 
 # Fenstergröße anhand der Größe der Map bestimmen (in Blöcken und Pixeln)
 MAPWIDTH,   MAPHEIGHT   = len(mapcontent[0]), len(mapcontent)
