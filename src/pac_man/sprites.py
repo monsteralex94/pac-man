@@ -2,6 +2,31 @@ from . import const
 import pygame
 from typing import Optional
 
+
+dmap = {
+    'r': (1, 0),
+    'u': (0, -1),
+    'l': (-1, 0),
+    'd': (0, 1),
+}
+
+
+def collision_with_wall_rect(rect, blocks_group) -> Optional[pygame.Rect]:
+    for sprite in blocks_group:
+        if sprite.rect.colliderect(rect):
+            return sprite.rect
+
+    return None
+
+
+def collision_with_wall_point(point, blocks_group) -> Optional[pygame.Rect]:
+    for sprite in blocks_group:
+        if sprite.rect.collidepoint(point):
+            return sprite.rect
+
+    return None
+
+
 class StaticSprite(pygame.sprite.Sprite):
     """Elternklasse für statische Sprites"""
 
@@ -23,27 +48,17 @@ class Block(StaticSprite):
 class EntitySprite(pygame.sprite.Sprite):
     """Elternklasse für bewegliche Sprites"""
 
-    def __init__(self, start_position: tuple[int, int], animation_textures: tuple[str, str]) -> None:
+    def __init__(self, start_position: tuple[int, int]) -> None:
         super().__init__()
 
-        # Frames für die Animation
-        frame0 = pygame.transform.scale(pygame.image.load(animation_textures[0]), (const.UNIT*2, const.UNIT*2))
-        frame1 = pygame.transform.scale(pygame.image.load(animation_textures[1]), (const.UNIT*2, const.UNIT*2))
-
-        # Rotationswinkel in Grad für jede Richtung
-        rotations = {'r': 0, 'u': 90, 'l': 180, 'd': 270}
-
-        # Erstellt Texturen für jede Animationsphase und Richtung
-        self.frames = [
-            {d: pygame.transform.rotate(frame, angle) for d, angle in rotations.items()}
-            for frame in (frame0, frame1)
-        ]
-
         # Aktuelles Frame
-        self.image = self.frames[0]['l']
+        self.image = pygame.Surface((const.UNIT * 2, const.UNIT * 2))
 
         # Rect (Position und Größe) des Sprites als Ganzzahlen für das Zeichnen auf den Bildschirm
         self.rect = self.image.get_rect(topleft=start_position)
+        self.hitbox = self.image.get_rect(topleft=start_position)
+
+        self.hitbox.width, self.hitbox.height = const.UNIT, const.UNIT
 
         # Tatsächliche Position des Sprites als Gleitkommazahlen (linke obere Ecke)
         self.float_pos = pygame.Vector2(start_position)
@@ -56,44 +71,18 @@ class EntitySprite(pygame.sprite.Sprite):
         # Timer und Texturzahl für Animation
         self.texture_timer = 0
         self.texture_num = 0
-    
-
-    def collision_with_wall(self, rect, blocks_group) -> Optional[pygame.Rect]:
-        for sprite in blocks_group:
-            if sprite.rect.colliderect(rect):
-                return sprite.rect
-
-        return None
 
 
-    def movement(self, windowsize, blocks_group, dt) -> None:
+    def movement(self, speed, windowsize, blocks_group, dt) -> None:
         """Kontrolliert die Steuerung mit curr_direction und try_direction"""
-
-        ########### ANIMATION
-        # Wenn der Timer überschritten wird, wechselt das Frame der Animation
-        # und der Timer wird zurückgesetzt
-        if self.texture_timer > 0.2:
-            self.texture_timer = 0
-            self.texture_num = int(not self.texture_num)
-
-        # Auswählen der Textur innerhalb der Animation und Aktualisierung des Timers
-        self.image = self.frames[self.texture_num][self.curr_direction]
-        self.texture_timer += dt
-
 
         ########### BEWEGUNG
         # Zurückzulegende Strecke in jede Richtung für den aktuellen Frame (x- und y-Komponenten)
-        dmap = {
-            'r': (const.SPEED * dt, 0),
-            'u': (0, -const.SPEED * dt),
-            'l': (-const.SPEED * dt, 0),
-            'd': (0, const.SPEED * dt),
-        }
 
         # Bewegung in Richtung curr_direction (aktuelle Richtung) und
         # try_direction (ab der nächsten Kreuzung)
-        dx, dy = dmap[self.curr_direction]
-        try_dx, try_dy = dmap[self.try_direction]
+        dx, dy = dmap[self.curr_direction][0] * speed * dt, dmap[self.curr_direction][1] * speed * dt
+        try_dx, try_dy = dmap[self.try_direction][0] * speed * dt, dmap[self.try_direction][1] * speed * dt
 
         ########### Anpassen von dx und dy anhand der Wände auf der Map
 
@@ -108,7 +97,7 @@ class EntitySprite(pygame.sprite.Sprite):
 
                     # Wenn Pac-Man bei der aktuellen Positionsänderung keine Wand berührt,
                     # werden dx und dy angepasst
-                    if not self.collision_with_wall(self.rect.move(try_dx, y), blocks_group):
+                    if not collision_with_wall_rect(self.rect.move(try_dx, y), blocks_group):
                         self.curr_direction = self.try_direction
                         dx = try_dx
                         dy = y
@@ -116,7 +105,7 @@ class EntitySprite(pygame.sprite.Sprite):
             # Genauso wie davor, nur mit x und y vertauscht
             elif self.try_direction in ('u', 'd'):
                 for x in range(min(0, int(dx)), max(0, int(dx))+1):
-                    if not self.collision_with_wall(self.rect.move(x, try_dy), blocks_group):
+                    if not collision_with_wall_rect(self.rect.move(x, try_dy), blocks_group):
                         self.curr_direction = self.try_direction
                         dy = try_dy
                         dx = x
@@ -128,7 +117,7 @@ class EntitySprite(pygame.sprite.Sprite):
         self.rect.left = int(self.float_pos.x)   # Als ganze Zahl (für das Zeichnen)
 
         # Anpassung von Abweichungen
-        tile_rect = self.collision_with_wall(self.rect, blocks_group)
+        tile_rect = collision_with_wall_rect(self.rect, blocks_group)
         if tile_rect:
             if dx > 0:
                 self.rect.right = tile_rect.left
@@ -141,7 +130,7 @@ class EntitySprite(pygame.sprite.Sprite):
         self.rect.top = int(self.float_pos.y)   # Als ganze Zahl (für das Zeichnen)
 
         # Anpassung von Abweichungen
-        tile_rect = self.collision_with_wall(self.rect, blocks_group)
+        tile_rect = collision_with_wall_rect(self.rect, blocks_group)
         if tile_rect:
             if dy > 0:
                 self.rect.bottom = tile_rect.top
@@ -156,32 +145,134 @@ class EntitySprite(pygame.sprite.Sprite):
         
         # Neue, angepasste Position
         self.rect.topleft = (int(self.float_pos.x), int(self.float_pos.y))
-
+        self.hitbox.center = self.rect.center
 
     def update(self, **kwargs):
         """Update-Funktion des Entity Sprites"""
-
-        # Bewegung wird ausgeführt
-        self.movement(kwargs["windowsize"], kwargs["blocks_group"], kwargs["dt"])
+        pass
 
 
 class Pacman(EntitySprite):
     "Klasse für Pac-Man"
 
     def __init__(self, start_position: tuple[int, int]) -> None:
-        super().__init__(start_position, (f"{const.CWD}/textures/pacman/0.png", f"{const.CWD}/textures/pacman/1.png"))
+        super().__init__(start_position)
+
+        # Frames für die Animation
+        frame0 = pygame.transform.scale(pygame.image.load(f"{const.CWD}/textures/pacman/0.png"), (const.UNIT*2, const.UNIT*2))
+        frame1 = pygame.transform.scale(pygame.image.load(f"{const.CWD}/textures/pacman/1.png"), (const.UNIT*2, const.UNIT*2))
+
+        # Rotationswinkel in Grad für jede Richtung
+        rotations = {'r': 0, 'u': 90, 'l': 180, 'd': 270}
+
+        # Erstellt Texturen für jede Animationsphase und Richtung
+        self.frames = [
+            {d: pygame.transform.rotate(frame, angle) for d, angle in rotations.items()}
+            for frame in (frame0, frame1)
+        ]
+
+        self.image = self.frames[0]['l']
+    
+    def update(self, **kwargs):
+        ########### ANIMATION
+        # Wenn der Timer überschritten wird, wechselt das Frame der Animation
+        # und der Timer wird zurückgesetzt
+        if self.texture_timer > 0.1:
+            self.texture_timer = 0
+            self.texture_num = int(not self.texture_num)
+
+        # Auswählen der Textur innerhalb der Animation und Aktualisierung des Timers
+        self.image = self.frames[self.texture_num][self.curr_direction]
+        self.texture_timer += kwargs["dt"]
+
+        ########### BEWEGUNG
+        self.movement(const.PACMAN_SPEED, kwargs["windowsize"], kwargs["blocks_group"], kwargs["dt"])
 
 
-class Ghost(EntitySprite):
+class Ghost1(EntitySprite):
     "Klasse für Geist"
 
     def __init__(self, start_position: tuple[int, int]) -> None:
-        super().__init__(start_position, (f"{const.CWD}/textures/pacman/0.png", f"{const.CWD}/textures/pacman/1.png"))
-    
+        super().__init__(start_position)
+        self.frames = \
+            pygame.transform.scale(pygame.image.load(f"{const.CWD}/textures/ghosts/red0.png"), (const.UNIT*2, const.UNIT*2)), \
+            pygame.transform.scale(pygame.image.load(f"{const.CWD}/textures/ghosts/red1.png"), (const.UNIT*2, const.UNIT*2))
+        
+        self.image = self.frames[0]
+        self.dir_switch_timer = 0.0
+ 
     def update(self, **kwargs):
-        # TODO: create ai
-        # ...
-        self.movement(kwargs["windowsize"], kwargs["blocks_group"], kwargs["dt"])
+        self.image = self.frames[int(self.rect.center[0] < kwargs["pacman"].rect.center[0])]
+
+        follow_pos = kwargs["pacman"].rect.center
+        min_distance = float('inf')
+        min_direction = 'l'
+
+        for direction_let, direction_num in dmap.items():
+            new_x = self.rect.center[0] + direction_num[0] * (const.UNIT + 1)
+            new_y = self.rect.center[1] + direction_num[1] * (const.UNIT + 1)
+
+            if collision_with_wall_point((new_x, new_y), kwargs["blocks_group"]):
+                continue
+            
+            distance = ((follow_pos[0] - new_x)**2
+                        + (follow_pos[1] - new_y)**2) ** 0.5
+
+            if distance < min_distance:
+                min_distance = distance
+                min_direction = direction_let
+
+        if self.dir_switch_timer > 0.3:
+            self.dir_switch_timer = 0
+            self.try_direction = min_direction
+        else:
+            self.dir_switch_timer += kwargs["dt"]
+
+        self.movement(const.GHOST_SPEED, kwargs["windowsize"], kwargs["blocks_group"], kwargs["dt"])
+
+
+class Ghost2(EntitySprite):
+    "Klasse für Geist"
+
+    def __init__(self, start_position: tuple[int, int]) -> None:
+        super().__init__(start_position)
+        self.frames = \
+            pygame.transform.scale(pygame.image.load(f"{const.CWD}/textures/ghosts/pink0.png"), (const.UNIT*2, const.UNIT*2)), \
+            pygame.transform.scale(pygame.image.load(f"{const.CWD}/textures/ghosts/pink1.png"), (const.UNIT*2, const.UNIT*2))
+        
+        self.image = self.frames[0]
+        self.dir_switch_timer = 0.0
+ 
+    def update(self, **kwargs):
+        self.image = self.frames[int(self.rect.center[0] < kwargs["pacman"].rect.center[0])]
+
+        follow_pos = kwargs["pacman"].rect.center[0] + dmap[kwargs["pacman"].try_direction][0] * const.UNIT * 4, \
+            kwargs["pacman"].rect.center[1] + dmap[kwargs["pacman"].try_direction][1] * const.UNIT * 4
+        
+        min_distance = float('inf')
+        min_direction = 'l'
+
+        for direction_let, direction_num in dmap.items():
+            new_x = self.rect.center[0] + direction_num[0] * (const.UNIT + 1)
+            new_y = self.rect.center[1] + direction_num[1] * (const.UNIT + 1)
+
+            if collision_with_wall_point((new_x, new_y), kwargs["blocks_group"]):
+                continue
+            
+            distance = ((follow_pos[0] - new_x)**2
+                        + (follow_pos[1] - new_y)**2) ** 0.5
+
+            if distance < min_distance:
+                min_distance = distance
+                min_direction = direction_let
+
+        if self.dir_switch_timer > 0.3:
+            self.dir_switch_timer = 0
+            self.try_direction = min_direction
+        else:
+            self.dir_switch_timer += kwargs["dt"]
+
+        self.movement(const.GHOST_SPEED, kwargs["windowsize"], kwargs["blocks_group"], kwargs["dt"])
 
 
 class PacmanDirection(pygame.sprite.Sprite):
@@ -209,10 +300,11 @@ class Pellet(StaticSprite):
     def __init__(self, position: tuple[int, int], texture: str):
         super().__init__(position, texture, (const.UNIT*2, const.UNIT*2), 0)
     
-    def update(self, pacman: Pacman):
+    def update(self, **kwargs):
         """Pellet updaten: Löscht sich, wenn von Pac-Man berührt"""
 
-        if pacman.rect.collidepoint(*self.rect.center):
+        if kwargs["pacman"].hitbox.collidepoint(*self.rect.center):
+            kwargs["game_data"]["score"] += 10
             self.kill()
 
 

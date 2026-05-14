@@ -4,32 +4,45 @@ from . import gamemap
 
 import pygame
 pygame.init()
+pygame.font.init()
+
+font = pygame.font.SysFont("Liberation Mono", const.UNIT * 2)
 
 # Map auslesen
 with open(f"{const.CWD}/map.txt") as mapfile:
     mapcontent = mapfile.read().split('\n')
 
 # Fenstergröße anhand der Größe der Map bestimmen (in Blöcken und Pixeln)
-WIDTH, HEIGHT = len(mapcontent[0]), len(mapcontent)
-PXWIDTH, PXHEIGHT = WIDTH * const.UNIT, HEIGHT * const.UNIT
+MAPWIDTH,   MAPHEIGHT   = len(mapcontent[0]), len(mapcontent)
+WINWIDTH,   WINHEIGHT   = MAPWIDTH, MAPHEIGHT + 4
+WINWIDTHPX, WINHEIGHTPX = WINWIDTH * const.UNIT, WINHEIGHT * const.UNIT
 
 # Statische Sprites aus dem Map-Inhalt laden
 blocks_group = pygame.sprite.Group()
 pellets_group = pygame.sprite.Group()
 
-gamemap.load_all(WIDTH, HEIGHT, mapcontent, blocks_group, pellets_group)
+gamemap.load_all(MAPWIDTH, MAPHEIGHT, mapcontent, blocks_group, pellets_group)
 
 # Bewegliche Sprites laden
 entities_group = pygame.sprite.Group()
 
 pacman = sprites.Pacman((const.UNIT*14, const.UNIT*23))
 pacman_direction = sprites.PacmanDirection()  # Pfeil, der die ausgewählte Richtung für Pacman anzeigt
-# ghost1 = sprites.Ghost((const.UNIT*14, const.UNIT))
-entities_group.add(pacman, pacman_direction)
+
+ghosts_group = pygame.sprite.Group()
+ghost1 = sprites.Ghost1((const.UNIT*14, const.UNIT))
+ghost2 = sprites.Ghost2((const.UNIT*14, const.UNIT*11))
+ghosts_group.add(ghost1, ghost2)
+
+entities_group.add(pacman, pacman_direction, ghost1, ghost2)
 
 # Fenster erstellen
-SCREEN = pygame.display.set_mode((PXWIDTH, PXHEIGHT))
+SCREEN = pygame.display.set_mode((WINWIDTHPX, WINHEIGHTPX))
 pygame.display.set_caption("Pac-Man")
+
+game_data = {
+    "score": 0
+}
 
 # Main-Loop
 clock = pygame.time.Clock()
@@ -58,17 +71,25 @@ while running:
     
     # Pellets neu laden, wenn alle gegessen wurden
     if len(pellets_group) == 0:
-        gamemap.load_pellets(WIDTH, HEIGHT, mapcontent, pellets_group)
+        gamemap.load_pellets(MAPWIDTH, MAPHEIGHT, mapcontent, pellets_group)
+    
+    for ghost in ghosts_group:
+        if pacman.hitbox.colliderect(ghost.hitbox):
+            running = False
     
     # Schwarzer Hintergrund
     SCREEN.fill((0, 0, 0))
 
+    score_text = font.render(f"Score: {game_data['score']}", True, (255, 255, 255))
+    SCREEN.blit(score_text, score_text.get_rect(center=(WINWIDTHPX/2, (WINHEIGHT-2)*const.UNIT)))
+
     # Pellets updaten: Löschen sich, wenn von Pac-Man berührt
-    pellets_group.update(pacman)
+    pellets_group.update(pacman=pacman, game_data=game_data)
     # Bewegliche Sprites updaten: KI der Ghosts usw...
-    entities_group.update(windowsize=(PXWIDTH, PXHEIGHT),
+    entities_group.update(windowsize=(WINWIDTHPX, WINHEIGHTPX),
                           dt=dt, blocks_group=blocks_group,
-                          pacman=pacman, pacman_direction=pacman_direction)
+                          pacman=pacman, pacman_direction=pacman_direction,
+                          game_data=game_data)
     
     # Alle Sprites zeichnen
     blocks_group.draw(SCREEN)
