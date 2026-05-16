@@ -198,11 +198,11 @@ class Ghost1(EntitySprite):
 
     def __init__(self, start_position: tuple[int, int]) -> None:
         super().__init__(start_position)
-
-        with as_file(files("pac_man").joinpath(f"resources/ghosts/red0.png")) as path0:
-            with as_file(files("pac_man").joinpath(f"resources/ghosts/red1.png")) as path1:
-                self.frames = pygame.transform.scale(pygame.image.load(path0), (const.UNIT*2, const.UNIT*2)), \
-                    pygame.transform.scale(pygame.image.load(path1), (const.UNIT*2, const.UNIT*2))
+        
+        with as_file(files("pac_man").joinpath(f"resources/ghosts/red.png")) as path:
+            orig_image = pygame.transform.scale(pygame.image.load(path), (const.UNIT*2, const.UNIT*2))
+        
+        self.frames = orig_image, pygame.transform.flip(orig_image, True, False)
         
         self.image = self.frames[0]
         self.dir_switch_timer = 0.0
@@ -243,10 +243,10 @@ class Ghost2(EntitySprite):
     def __init__(self, start_position: tuple[int, int]) -> None:
         super().__init__(start_position)
 
-        with as_file(files("pac_man").joinpath(f"resources/ghosts/pink0.png")) as path0:
-            with as_file(files("pac_man").joinpath(f"resources/ghosts/pink1.png")) as path1:
-                self.frames = pygame.transform.scale(pygame.image.load(path0), (const.UNIT*2, const.UNIT*2)), \
-                    pygame.transform.scale(pygame.image.load(path1), (const.UNIT*2, const.UNIT*2))
+        with as_file(files("pac_man").joinpath(f"resources/ghosts/pink.png")) as path:
+            orig_image = pygame.transform.scale(pygame.image.load(path), (const.UNIT*2, const.UNIT*2))
+        
+        self.frames = orig_image, pygame.transform.flip(orig_image, True, False)
         
         self.image = self.frames[0]
         self.dir_switch_timer = 0.0
