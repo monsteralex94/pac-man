@@ -231,8 +231,8 @@ class Ghost1(EntitySprite):
         if self.dir_switch_timer > 0.3:
             self.dir_switch_timer = 0
             self.try_direction = min_direction
-        else:
-            self.dir_switch_timer += kwargs["dt"]
+
+        self.dir_switch_timer += kwargs["dt"]
 
         self.movement(const.GHOST_SPEED, kwargs["windowsize"], kwargs["blocks_group"], kwargs["dt"])
 
