@@ -1,5 +1,3 @@
-import os
-
 FPS = 60
 UNIT = 16
 PACMAN_SPEED = UNIT * 10

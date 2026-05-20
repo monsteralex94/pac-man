@@ -1,7 +1,7 @@
 from . import const
 from . import sprites
 
-def load_all(width, height, mapcontent, blocks_group, pellets_group):
+def load_all(width, height, mapcontent, walls_group, pellets_group):
     """Alle statischen Sprites aus dem Map-Inhalt laden"""
 
     for y in range(height):
@@ -9,7 +9,9 @@ def load_all(width, height, mapcontent, blocks_group, pellets_group):
             block = mapcontent[y][x]
 
             if block == '#':
-                blocks_group.add(sprites.Block((x * const.UNIT, y * const.UNIT)))
+                walls_group.add(sprites.Wall((x * const.UNIT, y * const.UNIT)))
+            elif block == '-':
+                walls_group.add(sprites.Wall((x * const.UNIT, y * const.UNIT), ghost=True))
             elif block == '.':
                 pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
             elif block == ':':

@@ -12,17 +12,17 @@ dmap = {
 }
 
 
-def collision_with_wall_rect(rect, blocks_group) -> Optional[pygame.Rect]:
+def collision_with_wall_rect(rect, blocks_group, ignore_ghost_walls) -> Optional[pygame.Rect]:
     for sprite in blocks_group:
-        if sprite.rect.colliderect(rect):
+        if sprite.rect.colliderect(rect) and not (sprite.ghost and ignore_ghost_walls):
             return sprite.rect
 
     return None
 
 
-def collision_with_wall_point(point, blocks_group) -> Optional[pygame.Rect]:
+def collision_with_wall_point(point, blocks_group, ignore_ghost_walls) -> Optional[pygame.Rect]:
     for sprite in blocks_group:
-        if sprite.rect.collidepoint(point):
+        if sprite.rect.collidepoint(point) and not (sprite.ghost and ignore_ghost_walls):
             return sprite.rect
 
     return None
@@ -40,11 +40,12 @@ class StaticSprite(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(topleft=position)
 
 
-class Block(StaticSprite):
-    """Klasse für Blocks"""
+class Wall(StaticSprite):
+    """Klasse für Wände"""
 
-    def __init__(self, position: tuple[int, int]) -> None:
+    def __init__(self, position: tuple[int, int], ghost: bool=False) -> None:
         super().__init__(position, "blocks/0", (const.UNIT, const.UNIT), 0)
+        self.ghost = ghost
 
 
 class EntitySprite(pygame.sprite.Sprite):
@@ -75,7 +76,7 @@ class EntitySprite(pygame.sprite.Sprite):
         self.texture_num = 0
 
 
-    def movement(self, speed, windowsize, blocks_group, dt) -> None:
+    def movement(self, speed, windowsize, blocks_group, dt, ignore_ghost_walls=False) -> None:
         """Kontrolliert die Steuerung mit curr_direction und try_direction"""
 
         ########### BEWEGUNG
@@ -99,7 +100,7 @@ class EntitySprite(pygame.sprite.Sprite):
 
                     # Wenn Pac-Man bei der aktuellen Positionsänderung keine Wand berührt,
                     # werden dx und dy angepasst
-                    if not collision_with_wall_rect(self.rect.move(try_dx, y), blocks_group):
+                    if not collision_with_wall_rect(self.rect.move(try_dx, y), blocks_group, ignore_ghost_walls):
                         self.curr_direction = self.try_direction
                         dx = try_dx
                         dy = y
@@ -107,7 +108,7 @@ class EntitySprite(pygame.sprite.Sprite):
             # Genauso wie davor, nur mit x und y vertauscht
             elif self.try_direction in ('u', 'd'):
                 for x in range(min(0, int(dx)), max(0, int(dx))+1):
-                    if not collision_with_wall_rect(self.rect.move(x, try_dy), blocks_group):
+                    if not collision_with_wall_rect(self.rect.move(x, try_dy), blocks_group, ignore_ghost_walls):
                         self.curr_direction = self.try_direction
                         dy = try_dy
                         dx = x
@@ -119,12 +120,12 @@ class EntitySprite(pygame.sprite.Sprite):
         self.rect.left = int(self.float_pos.x)   # Als ganze Zahl (für das Zeichnen)
 
         # Anpassung von Abweichungen
-        tile_rect = collision_with_wall_rect(self.rect, blocks_group)
-        if tile_rect:
+        wall_rect = collision_with_wall_rect(self.rect, blocks_group, ignore_ghost_walls)
+        if wall_rect:
             if dx > 0:
-                self.rect.right = tile_rect.left
+                self.rect.right = wall_rect.left
             elif dx < 0:
-                self.rect.left = tile_rect.right
+                self.rect.left = wall_rect.right
             self.float_pos.x = self.rect.left
 
         # Bewegung in y-Richtung
@@ -132,12 +133,12 @@ class EntitySprite(pygame.sprite.Sprite):
         self.rect.top = int(self.float_pos.y)   # Als ganze Zahl (für das Zeichnen)
 
         # Anpassung von Abweichungen
-        tile_rect = collision_with_wall_rect(self.rect, blocks_group)
-        if tile_rect:
+        wall_rect = collision_with_wall_rect(self.rect, blocks_group, ignore_ghost_walls)
+        if wall_rect:
             if dy > 0:
-                self.rect.bottom = tile_rect.top
+                self.rect.bottom = wall_rect.top
             elif dy < 0:
-                self.rect.top = tile_rect.bottom
+                self.rect.top = wall_rect.bottom
             self.float_pos.y = self.rect.top
     
         if self.float_pos.x > windowsize[0]:
@@ -151,7 +152,7 @@ class EntitySprite(pygame.sprite.Sprite):
 
     def update(self, **kwargs):
         """Update-Funktion des Entity Sprites"""
-        pass
+        self.hitbox.center = self.rect.center
 
 
 class Pacman(EntitySprite):
@@ -206,8 +207,18 @@ class Ghost1(EntitySprite):
         
         self.image = self.frames[0]
         self.dir_switch_timer = 0.0
+
+        self.start = True
  
     def update(self, **kwargs):
+        if self.start:
+            pos = self.rect.center
+            self.try_direction = 'u'
+            self.movement(const.GHOST_SPEED, kwargs["windowsize"], kwargs["blocks_group"], kwargs["dt"], True)
+            if self.rect.center == pos:
+                self.start = False
+            return
+
         self.image = self.frames[int(self.rect.center[0] < kwargs["pacman"].rect.center[0])]
 
         follow_pos = kwargs["pacman"].rect.center
@@ -218,7 +229,7 @@ class Ghost1(EntitySprite):
             new_x = self.rect.center[0] + direction_num[0] * (const.UNIT + 1)
             new_y = self.rect.center[1] + direction_num[1] * (const.UNIT + 1)
 
-            if collision_with_wall_point((new_x, new_y), kwargs["blocks_group"]):
+            if collision_with_wall_point((new_x, new_y), kwargs["blocks_group"], False):
                 continue
             
             distance = ((follow_pos[0] - new_x)**2
@@ -250,8 +261,18 @@ class Ghost2(EntitySprite):
         
         self.image = self.frames[0]
         self.dir_switch_timer = 0.0
+
+        self.start = True
  
     def update(self, **kwargs):
+        if self.start:
+            pos = self.rect.center
+            self.try_direction = 'u'
+            self.movement(const.GHOST_SPEED, kwargs["windowsize"], kwargs["blocks_group"], kwargs["dt"], True)
+            if self.rect.center == pos:
+                self.start = False
+            return
+
         self.image = self.frames[int(self.rect.center[0] < kwargs["pacman"].rect.center[0])]
 
         follow_pos = kwargs["pacman"].rect.center[0] + dmap[kwargs["pacman"].try_direction][0] * const.UNIT * 4, \
@@ -264,7 +285,7 @@ class Ghost2(EntitySprite):
             new_x = self.rect.center[0] + direction_num[0] * (const.UNIT + 1)
             new_y = self.rect.center[1] + direction_num[1] * (const.UNIT + 1)
 
-            if collision_with_wall_point((new_x, new_y), kwargs["blocks_group"]):
+            if collision_with_wall_point((new_x, new_y), kwargs["blocks_group"], False):
                 continue
             
             distance = ((follow_pos[0] - new_x)**2

@@ -19,10 +19,10 @@ WINWIDTH,   WINHEIGHT   = MAPWIDTH, MAPHEIGHT + 4
 WINWIDTHPX, WINHEIGHTPX = WINWIDTH * const.UNIT, WINHEIGHT * const.UNIT
 
 # Statische Sprites aus dem Map-Inhalt laden
-blocks_group = pygame.sprite.Group()
+walls_group = pygame.sprite.Group()
 pellets_group = pygame.sprite.Group()
 
-gamemap.load_all(MAPWIDTH, MAPHEIGHT, mapcontent, blocks_group, pellets_group)
+gamemap.load_all(MAPWIDTH, MAPHEIGHT, mapcontent, walls_group, pellets_group)
 
 # Bewegliche Sprites laden
 entities_group = pygame.sprite.Group()
@@ -31,8 +31,8 @@ pacman = sprites.Pacman((const.UNIT*14, const.UNIT*23))
 pacman_direction = sprites.PacmanDirection()  # Pfeil, der die ausgewählte Richtung für Pacman anzeigt
 
 ghosts_group = pygame.sprite.Group()
-ghost1 = sprites.Ghost1((const.UNIT*14, const.UNIT))
-ghost2 = sprites.Ghost2((const.UNIT*14, const.UNIT*11))
+ghost1 = sprites.Ghost1((const.UNIT*15, const.UNIT*14))
+ghost2 = sprites.Ghost2((const.UNIT*12, const.UNIT*14))
 ghosts_group.add(ghost1, ghost2)
 
 entities_group.add(pacman, pacman_direction, ghost1, ghost2)
@@ -88,12 +88,12 @@ while running:
     pellets_group.update(pacman=pacman, game_data=game_data)
     # Bewegliche Sprites updaten: KI der Ghosts usw...
     entities_group.update(windowsize=(WINWIDTHPX, WINHEIGHTPX),
-                          dt=dt, blocks_group=blocks_group,
+                          dt=dt, blocks_group=walls_group,
                           pacman=pacman, pacman_direction=pacman_direction,
                           game_data=game_data)
     
     # Alle Sprites zeichnen
-    blocks_group.draw(SCREEN)
+    walls_group.draw(SCREEN)
     pellets_group.draw(SCREEN)
     entities_group.draw(SCREEN)
 
