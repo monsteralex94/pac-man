@@ -88,7 +88,7 @@ while running:
     pellets_group.update(pacman=pacman, game_data=game_data)
     # Bewegliche Sprites updaten: KI der Ghosts usw...
     entities_group.update(windowsize=(WINWIDTHPX, WINHEIGHTPX),
-                          dt=dt, blocks_group=walls_group,
+                          dt=dt, walls_group=walls_group,
                           pacman=pacman, pacman_direction=pacman_direction,
                           game_data=game_data)
     
