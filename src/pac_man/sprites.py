@@ -214,9 +214,12 @@ class Ghost1(EntitySprite):
         if self.start:
             pos = self.rect.center
             self.try_direction = 'u'
+
             self.movement(const.GHOST_SPEED, kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"], True)
+
             if self.rect.center == pos:
                 self.start = False
+            
             return
 
         self.image = self.frames[int(self.rect.center[0] < kwargs["pacman"].rect.center[0])]
@@ -268,9 +271,12 @@ class Ghost2(EntitySprite):
         if self.start:
             pos = self.rect.center
             self.try_direction = 'u'
+
             self.movement(const.GHOST_SPEED, kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"], True)
+            
             if self.rect.center == pos:
                 self.start = False
+            
             return
 
         self.image = self.frames[int(self.rect.center[0] < kwargs["pacman"].rect.center[0])]
