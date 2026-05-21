@@ -44,7 +44,7 @@ class Wall(StaticSprite):
     """Klasse für Wände"""
 
     def __init__(self, position: tuple[int, int], ghost: bool=False) -> None:
-        super().__init__(position, "walls/0", (const.UNIT, const.UNIT), 0)
+        super().__init__(position, "walls/1" if ghost else "walls/0", (const.UNIT, const.UNIT), 0)
         self.ghost = ghost
 
 
