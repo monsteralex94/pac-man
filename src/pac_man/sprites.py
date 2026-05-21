@@ -13,17 +13,17 @@ dmap = {
 
 
 def collision_with_wall_rect(rect, walls_group, ignore_ghost_walls) -> Optional[pygame.Rect]:
-    for sprite in walls_group:
-        if sprite.rect.colliderect(rect) and not (sprite.ghost and ignore_ghost_walls):
-            return sprite.rect
+    for wall in walls_group:
+        if wall.rect.colliderect(rect) and not (wall.ghost and ignore_ghost_walls):
+            return wall.rect
 
     return None
 
 
 def collision_with_wall_point(point, walls_group, ignore_ghost_walls) -> Optional[pygame.Rect]:
-    for sprite in walls_group:
-        if sprite.rect.collidepoint(point) and not (sprite.ghost and ignore_ghost_walls):
-            return sprite.rect
+    for wall in walls_group:
+        if wall.rect.collidepoint(point) and not (wall.ghost and ignore_ghost_walls):
+            return wall.rect
 
     return None
 
@@ -273,7 +273,7 @@ class Ghost2(EntitySprite):
             self.try_direction = 'u'
 
             self.movement(const.GHOST_SPEED, kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"], True)
-            
+
             if self.rect.center == pos:
                 self.start = False
             
