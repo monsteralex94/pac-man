@@ -85,7 +85,7 @@ while running:
     SCREEN.blit(score_text, score_text.get_rect(center=(WINWIDTHPX/2, (WINHEIGHT-2)*const.UNIT)))
 
     # Pellets updaten: Löschen sich, wenn von Pac-Man berührt
-    pellets_group.update(pacman=pacman, game_data=game_data)
+    pellets_group.update(pacman=pacman, game_data=game_data, dt=dt, pellets_group=pellets_group)
     # Bewegliche Sprites updaten: KI der Ghosts usw...
     entities_group.update(windowsize=(WINWIDTHPX, WINHEIGHTPX),
                           dt=dt, walls_group=walls_group,

@@ -71,10 +71,6 @@ class EntitySprite(pygame.sprite.Sprite):
         # Richtung, in die Pac-Man gehen will (wegen Benutzereingabe)
         self.try_direction = 'l'
 
-        # Timer und Texturzahl für Animation
-        self.texture_timer = 0
-        self.texture_num = 0
-
 
     def movement(self, speed, windowsize, walls_group, dt, ignore_ghost_walls=False) -> None:
         """Kontrolliert die Steuerung mit curr_direction und try_direction"""
@@ -177,12 +173,16 @@ class Pacman(EntitySprite):
         ]
 
         self.image = self.frames[0]['l']
+
+        # Timer und Texturzahl für Animation
+        self.texture_timer = 0
+        self.texture_num = 0
     
     def update(self, **kwargs):
         ########### ANIMATION
         # Wenn der Timer überschritten wird, wechselt das Frame der Animation
         # und der Timer wird zurückgesetzt
-        if self.texture_timer > 0.1:
+        if self.texture_timer > const.PACMAN_TEXTURE_SWITCH_INTERVAL:
             self.texture_timer = 0
             self.texture_num = int(not self.texture_num)
 
@@ -192,6 +192,27 @@ class Pacman(EntitySprite):
 
         ########### BEWEGUNG
         self.movement(const.PACMAN_SPEED, kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"])
+
+
+def direct_follow(current_pos, follow_pos, walls_group) -> str:
+    min_distance = float('inf')
+    min_direction = 'l'
+
+    for direction_let, direction_num in dmap.items():
+        new_x = current_pos[0] + direction_num[0] * (const.UNIT + 1)
+        new_y = current_pos[1] + direction_num[1] * (const.UNIT + 1)
+
+        if collision_with_wall_point((new_x, new_y), walls_group, False):
+            continue
+        
+        distance = ((follow_pos[0] - new_x)**2
+                    + (follow_pos[1] - new_y)**2) ** 0.5
+
+        if distance < min_distance:
+            min_distance = distance
+            min_direction = direction_let
+    
+    return min_direction
 
 
 class Ghost1(EntitySprite):
@@ -224,27 +245,9 @@ class Ghost1(EntitySprite):
 
         self.image = self.frames[int(self.rect.center[0] < kwargs["pacman"].rect.center[0])]
 
-        follow_pos = kwargs["pacman"].rect.center
-        min_distance = float('inf')
-        min_direction = 'l'
-
-        for direction_let, direction_num in dmap.items():
-            new_x = self.rect.center[0] + direction_num[0] * (const.UNIT + 1)
-            new_y = self.rect.center[1] + direction_num[1] * (const.UNIT + 1)
-
-            if collision_with_wall_point((new_x, new_y), kwargs["walls_group"], False):
-                continue
-            
-            distance = ((follow_pos[0] - new_x)**2
-                        + (follow_pos[1] - new_y)**2) ** 0.5
-
-            if distance < min_distance:
-                min_distance = distance
-                min_direction = direction_let
-
-        if self.dir_switch_timer > 0.3:
+        if self.dir_switch_timer > const.GHOST_DIRECTION_SWITCH_INTERVAL:
             self.dir_switch_timer = 0
-            self.try_direction = min_direction
+            self.try_direction = direct_follow(self.rect.center, kwargs["pacman"].rect.center, kwargs["walls_group"])
 
         self.dir_switch_timer += kwargs["dt"]
 
@@ -283,29 +286,12 @@ class Ghost2(EntitySprite):
 
         follow_pos = kwargs["pacman"].rect.center[0] + dmap[kwargs["pacman"].try_direction][0] * const.UNIT * 4, \
             kwargs["pacman"].rect.center[1] + dmap[kwargs["pacman"].try_direction][1] * const.UNIT * 4
-        
-        min_distance = float('inf')
-        min_direction = 'l'
 
-        for direction_let, direction_num in dmap.items():
-            new_x = self.rect.center[0] + direction_num[0] * (const.UNIT + 1)
-            new_y = self.rect.center[1] + direction_num[1] * (const.UNIT + 1)
-
-            if collision_with_wall_point((new_x, new_y), kwargs["walls_group"], False):
-                continue
-            
-            distance = ((follow_pos[0] - new_x)**2
-                        + (follow_pos[1] - new_y)**2) ** 0.5
-
-            if distance < min_distance:
-                min_distance = distance
-                min_direction = direction_let
-
-        if self.dir_switch_timer > 0.3:
+        if self.dir_switch_timer > const.GHOST_DIRECTION_SWITCH_INTERVAL:
             self.dir_switch_timer = 0
-            self.try_direction = min_direction
-        else:
-            self.dir_switch_timer += kwargs["dt"]
+            self.try_direction = direct_follow(self.rect.center, follow_pos, kwargs["walls_group"])
+
+        self.dir_switch_timer += kwargs["dt"]
 
         self.movement(const.GHOST_SPEED, kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"])
 
@@ -355,3 +341,20 @@ class PowerPellet(Pellet):
     "Klasse für Power Pellets"
     def __init__(self, position: tuple[int, int]):
         super().__init__(position, "pellets/1")
+
+        self.image.set_alpha(255)
+        self.blink_timer = 0.0
+    
+    def update(self, **kwargs):        
+        if self.blink_timer > const.POWER_PELLET_BLINK_INTERVAL:
+            match self.image.get_alpha():
+                case 0:   self.image.set_alpha(255)
+                case 255: self.image.set_alpha(0)
+
+            self.blink_timer = 0.0
+
+        self.blink_timer += kwargs["dt"]
+
+        if kwargs["pacman"].hitbox.collidepoint(*self.rect.center):
+            # TODO: Hier Power-Pellet-Verhalten implementieren
+            self.kill()
