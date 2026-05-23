@@ -41,6 +41,14 @@ entities_group.add(pacman, pacman_direction, ghost1, ghost2)
 SCREEN = pygame.display.set_mode((WINWIDTHPX, WINHEIGHTPX))
 pygame.display.set_caption("Pac-Man")
 
+# Highscore auslesen
+if const.HIGHSCORE_PATH.exists():
+    with open(const.HIGHSCORE_PATH) as file:
+        highscore = int(file.read())
+else:
+    highscore = 0
+
+# Daten während des Spiels
 game_data = {
     "score": 0
 }
@@ -76,13 +84,19 @@ while running:
     
     for ghost in ghosts_group:
         if pacman.hitbox.colliderect(ghost.hitbox):
+            if game_data["score"] > highscore:
+                with open(const.HIGHSCORE_PATH, "w") as file:
+                    file.write(str(game_data["score"]))
             running = False
     
     # Schwarzer Hintergrund
     SCREEN.fill((0, 0, 0))
 
-    score_text = font.render(f"Score: {game_data['score']}", True, (255, 255, 255))
-    SCREEN.blit(score_text, score_text.get_rect(center=(WINWIDTHPX/2, (WINHEIGHT-2)*const.UNIT)))
+    score_text = font.render(f"SCORE {game_data['score']}", True, (255, 255, 255))
+    SCREEN.blit(score_text, score_text.get_rect(center=(WINWIDTHPX/2, (WINHEIGHT-3)*const.UNIT)))
+
+    highscore_text = font.render(f"HIGHSCORE {highscore}", True, (255, 255, 255))
+    SCREEN.blit(highscore_text, highscore_text.get_rect(center=(WINWIDTHPX/2, (WINHEIGHT-1)*const.UNIT)))
 
     # Pellets updaten: Löschen sich, wenn von Pac-Man berührt
     pellets_group.update(pacman=pacman, game_data=game_data, dt=dt, pellets_group=pellets_group)

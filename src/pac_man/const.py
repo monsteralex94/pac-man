@@ -1,7 +1,11 @@
+from pathlib import Path
+
 FPS = 60
 UNIT = 16
 PACMAN_SPEED = UNIT * 10
 GHOST_SPEED = UNIT * 7
+
+HIGHSCORE_PATH = Path.home() / "pacman_highscore.txt"
 
 PACMAN_TEXTURE_SWITCH_INTERVAL = 0.1
 GHOST_DIRECTION_SWITCH_INTERVAL = 0.3
