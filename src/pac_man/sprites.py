@@ -253,9 +253,17 @@ class Ghost1(EntitySprite):
 
         self.image = self.frames[int(self.rect.center[0] < kwargs["pacman"].rect.center[0])]
 
-        if self.dir_switch_timer > const.GHOST_DIRECTION_SWITCH_INTERVAL:
+        follow_pos = kwargs["pacman"].rect.center \
+            if kwargs["game_data"]["ghost_mode"] == const.GHOST_CHASE_MODE \
+            else (kwargs["windowsize"][0], 0)
+        
+        direction_switch_interval = const.GHOST_CHASE_DIRECTION_SWITCH_INTERVAL \
+            if kwargs["game_data"]["ghost_mode"] == const.GHOST_CHASE_MODE \
+            else const.GHOST_SCATTER_DIRECTION_SWITCH_INTERVAL
+
+        if self.dir_switch_timer > direction_switch_interval:
             self.dir_switch_timer = 0
-            self.try_direction = direct_follow(self.rect.center, kwargs["pacman"].rect.center, kwargs["walls_group"])
+            self.try_direction = direct_follow(self.rect.center, follow_pos, kwargs["walls_group"])
 
         self.dir_switch_timer += kwargs["dt"]
 
@@ -294,8 +302,16 @@ class Ghost2(EntitySprite):
 
         follow_pos = kwargs["pacman"].rect.center[0] + dmap[kwargs["pacman"].try_direction][0] * const.UNIT * 4, \
             kwargs["pacman"].rect.center[1] + dmap[kwargs["pacman"].try_direction][1] * const.UNIT * 4
+        
+        follow_pos = follow_pos \
+            if kwargs["game_data"]["ghost_mode"] == const.GHOST_CHASE_MODE \
+            else (0, 0)
+        
+        direction_switch_interval = const.GHOST_CHASE_DIRECTION_SWITCH_INTERVAL \
+            if kwargs["game_data"]["ghost_mode"] == const.GHOST_CHASE_MODE \
+            else const.GHOST_SCATTER_DIRECTION_SWITCH_INTERVAL
 
-        if self.dir_switch_timer > const.GHOST_DIRECTION_SWITCH_INTERVAL:
+        if self.dir_switch_timer > direction_switch_interval:
             self.dir_switch_timer = 0
             self.try_direction = direct_follow(self.rect.center, follow_pos, kwargs["walls_group"])
 
@@ -334,14 +350,21 @@ class Ghost3(EntitySprite):
 
         self.image = self.frames[int(self.rect.center[0] < kwargs["pacman"].rect.center[0])]
 
-        follow_pos_1 = kwargs["ghost1"].rect.center
-        follow_pos_2 = kwargs["pacman"].rect.center[0] + dmap[kwargs["pacman"].try_direction][0] * const.UNIT * 2, \
-            kwargs["pacman"].rect.center[1] + dmap[kwargs["pacman"].try_direction][1] * const.UNIT * 2
+        if kwargs["game_data"]["ghost_mode"] == const.GHOST_CHASE_MODE:
+            follow_pos_1 = kwargs["ghost1"].rect.center
+            follow_pos_2 = kwargs["pacman"].rect.center[0] + dmap[kwargs["pacman"].try_direction][0] * const.UNIT * 2, \
+                kwargs["pacman"].rect.center[1] + dmap[kwargs["pacman"].try_direction][1] * const.UNIT * 2
 
-        follow_pos = 2 * follow_pos_2[0] - follow_pos_1[0], \
-            2 * follow_pos_2[1] - follow_pos_1[1]
+            follow_pos = 2 * follow_pos_2[0] - follow_pos_1[0], \
+                2 * follow_pos_2[1] - follow_pos_1[1]
+        else:
+            follow_pos = kwargs["windowsize"]
+        
+        direction_switch_interval = const.GHOST_CHASE_DIRECTION_SWITCH_INTERVAL \
+            if kwargs["game_data"]["ghost_mode"] == const.GHOST_CHASE_MODE \
+            else const.GHOST_SCATTER_DIRECTION_SWITCH_INTERVAL
 
-        if self.dir_switch_timer > const.GHOST_DIRECTION_SWITCH_INTERVAL:
+        if self.dir_switch_timer > direction_switch_interval:
             self.dir_switch_timer = 0
             self.try_direction = direct_follow(self.rect.center, follow_pos, kwargs["walls_group"])
 
@@ -380,9 +403,15 @@ class Ghost4(EntitySprite):
 
         self.image = self.frames[int(self.rect.center[0] < kwargs["pacman"].rect.center[0])]
 
-        follow_pos = kwargs["pacman"].rect.center
+        follow_pos = kwargs["pacman"].rect.center \
+            if kwargs["game_data"]["ghost_mode"] == const.GHOST_CHASE_MODE \
+            else (0, kwargs["windowsize"][1])
+        
+        direction_switch_interval = const.GHOST_CHASE_DIRECTION_SWITCH_INTERVAL \
+            if kwargs["game_data"]["ghost_mode"] == const.GHOST_CHASE_MODE \
+            else const.GHOST_SCATTER_DIRECTION_SWITCH_INTERVAL
 
-        if self.dir_switch_timer > const.GHOST_DIRECTION_SWITCH_INTERVAL:
+        if self.dir_switch_timer > direction_switch_interval:
             self.dir_switch_timer = 0
             self.try_direction = direct_follow(self.rect.center, 
                 follow_pos if

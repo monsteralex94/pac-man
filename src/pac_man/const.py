@@ -20,9 +20,31 @@ DEATH_MODE = 3
 ABS_DEATH_MODE = 4
 ALL_PELLETS_MODE = 5
 
+GHOST_SCATTER_MODE = 0
+GHOST_CHASE_MODE = 1
+
 READY_INTERVAL = 1.5
 DEATH_INTERVAL = 1.0
 ALL_PELLETS_INTERVAL = 1.0
 PACMAN_TEXTURE_SWITCH_INTERVAL = 0.1
-GHOST_DIRECTION_SWITCH_INTERVAL = 0.3
+GHOST_CHASE_DIRECTION_SWITCH_INTERVAL = 0.3
+GHOST_SCATTER_DIRECTION_SWITCH_INTERVAL = 0.6
+
+def GHOST_INTERVAL(ghost_mode, ghost_mode_cycle):
+    if ghost_mode == GHOST_SCATTER_MODE:
+        if ghost_mode_cycle <= 2:
+            return 7.0
+        elif ghost_mode_cycle == 3:
+            return 5.0
+        elif ghost_mode_cycle >= 4:
+            return 0.0
+    elif ghost_mode == GHOST_CHASE_MODE:
+        if ghost_mode_cycle <= 3:
+            return 20.0
+        else:
+            return float('inf')
+    
+    return 0.0
+
+
 POWER_PELLET_BLINK_INTERVAL = 0.15

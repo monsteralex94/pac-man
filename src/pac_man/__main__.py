@@ -58,12 +58,17 @@ else:
 # Daten während des Spiels
 game_data = {
     "score": 0,
+    "level": 1,
     "lives": 2,
+    "ghost_mode": const.GHOST_SCATTER_MODE,
+    "ghost_mode_cycle": 1,
 }
 
 ready_timer = 0.0
 death_timer = 0.0
 all_pellets_timer = 0.0
+
+ghost_timer = const.GHOST_INTERVAL(game_data["ghost_mode"], game_data["ghost_mode_cycle"])
 
 # Main-Loop
 clock = pygame.time.Clock()
@@ -86,7 +91,7 @@ def reset_entity_sprites(dt):
 
 
 def normal_mode(dt):
-    global ready_timer, all_pellets_timer, mode, running
+    global ready_timer, all_pellets_timer, ghost_timer, mode, running
 
     # Pellets neu laden, wenn alle gegessen wurden
     if len(pellets_group) == 0:
@@ -102,6 +107,19 @@ def normal_mode(dt):
                     with open(const.HIGHSCORE_PATH, "w") as file:
                         file.write(str(game_data["score"]))
                 mode = const.ABS_DEATH_MODE
+    
+    if ghost_timer <= 0.0:
+        if game_data["ghost_mode"] == const.GHOST_SCATTER_MODE:
+            game_data["ghost_mode"] = const.GHOST_CHASE_MODE
+        elif game_data["ghost_mode"] == const.GHOST_CHASE_MODE:
+            game_data["ghost_mode"] = const.GHOST_SCATTER_MODE
+            game_data["ghost_mode_cycle"] += 1
+        
+        ghost_timer = const.GHOST_INTERVAL(game_data["ghost_mode"], game_data["ghost_mode_cycle"])
+
+    ghost_timer -= dt
+    
+    print(game_data["ghost_mode"], game_data["ghost_mode_cycle"], ghost_timer)
 
     # Pellets updaten: Löschen sich, wenn von Pac-Man berührt
     pellets_group.update(pacman=pacman, game_data=game_data, dt=dt, pellets_group=pellets_group)
@@ -156,6 +174,9 @@ def all_pellets_mode(dt):
     global all_pellets_timer, mode
 
     if all_pellets_timer > const.ALL_PELLETS_INTERVAL:
+        game_data["level"] += 1
+        game_data["ghost_mode"] = const.GHOST_SCATTER_MODE
+        game_data["ghost_mode_cycle"] = 1
         reset_entity_sprites(dt)
         gamemap.load_pellets(MAPWIDTH, MAPHEIGHT, mapcontent, pellets_group)
         all_pellets_timer = 0.0
@@ -198,10 +219,13 @@ while mode != const.EXIT_MODE:
 
     # Aktuelle Punktzahl und Highscore
     score_text = font.render(f"SCORE {game_data['score']}", True, (255, 255, 255))
-    SCREEN.blit(score_text, score_text.get_rect(center=(WINWIDTHPX/2, (WINHEIGHT-3)*const.UNIT)))
+    SCREEN.blit(score_text, score_text.get_rect(topleft=(WINWIDTHPX*0.2, (WINHEIGHT-4)*const.UNIT)))
 
     highscore_text = font.render(f"HIGHSCORE {highscore}", True, (255, 255, 255))
-    SCREEN.blit(highscore_text, highscore_text.get_rect(center=(WINWIDTHPX/2, (WINHEIGHT-1)*const.UNIT)))
+    SCREEN.blit(highscore_text, highscore_text.get_rect(topleft=(WINWIDTHPX*0.2, (WINHEIGHT-2)*const.UNIT)))
+
+    level_text = font.render(f"LEVEL {game_data['level']}", True, (255, 255, 255))
+    SCREEN.blit(level_text, level_text.get_rect(topleft=(WINWIDTHPX*0.7, (WINHEIGHT-4)*const.UNIT)))
 
     # Pac-Mans Leben
     for i in range(game_data["lives"]):
