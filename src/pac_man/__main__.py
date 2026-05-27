@@ -2,7 +2,7 @@ from . import const
 from . import sprites
 from . import gamemap
 
-from importlib.resources import files
+from importlib.resources import as_file, files
 
 import pygame
 pygame.init()
@@ -27,15 +27,20 @@ gamemap.load_all(MAPWIDTH, MAPHEIGHT, mapcontent, walls_group, pellets_group)
 # Bewegliche Sprites laden
 entities_group = pygame.sprite.Group()
 
-pacman = sprites.Pacman((const.UNIT*14, const.UNIT*23))
+pacman = sprites.Pacman(const.PACMAN_START_POS)
 pacman_direction = sprites.PacmanDirection()  # Pfeil, der die ausgewählte Richtung für Pacman anzeigt
+pacman_direction.update(pacman=pacman)
 
 ghosts_group = pygame.sprite.Group()
-ghost1 = sprites.Ghost1((const.UNIT*15, const.UNIT*14))
-ghost2 = sprites.Ghost2((const.UNIT*12, const.UNIT*14))
+ghost1 = sprites.Ghost1(const.GHOST1_START_POS)
+ghost2 = sprites.Ghost2(const.GHOST2_START_POS)
 ghosts_group.add(ghost1, ghost2)
 
 entities_group.add(pacman, pacman_direction, ghost1, ghost2)
+
+# Textur für Pac-Mans Leben
+with as_file(files("pac_man").joinpath(f"resources/pacman/1.png")) as path:
+    life_texture = pygame.transform.scale(pygame.image.load(path), (const.UNIT*2, const.UNIT*2))
 
 # Fenster erstellen
 SCREEN = pygame.display.set_mode((WINWIDTHPX, WINHEIGHTPX))
@@ -50,21 +55,107 @@ else:
 
 # Daten während des Spiels
 game_data = {
-    "score": 0
+    "score": 0,
+    "lives": 2,
 }
+
+ready_timer = 0.0
+death_timer = 0.0
+all_pellets_timer = 0.0
 
 # Main-Loop
 clock = pygame.time.Clock()
-running = True
+mode = const.READY_MODE
 
-while running:
+def reset_entity_sprites(dt):
+    ghost1.set_pos(const.GHOST1_START_POS)
+    ghost2.set_pos(const.GHOST2_START_POS)
+    ghost1.start, ghost2.start = True, True
+
+    pacman.set_pos(const.PACMAN_START_POS)
+    pacman.try_direction = 'l'
+    pacman.curr_direction = 'l'
+    pacman.texture_num = 1
+
+    pacman.update(dt=dt, move=False)
+    pacman_direction.update(pacman=pacman)
+
+
+def normal_mode(dt):
+    global ready_timer, all_pellets_timer, mode, running
+
+    # Pellets neu laden, wenn alle gegessen wurden
+    if len(pellets_group) == 0:
+        all_pellets_timer = 0.0
+        mode = const.ALL_PELLETS_MODE
+    
+    for ghost in ghosts_group:
+        if pacman.hitbox.colliderect(ghost.hitbox):
+            if game_data["lives"] > 0:
+                mode = const.DEATH_MODE
+            else:
+                if game_data["score"] > highscore:
+                    with open(const.HIGHSCORE_PATH, "w") as file:
+                        file.write(str(game_data["score"]))
+                mode = const.EXIT_MODE
+
+    # Pellets updaten: Löschen sich, wenn von Pac-Man berührt
+    pellets_group.update(pacman=pacman, game_data=game_data, dt=dt, pellets_group=pellets_group)
+    # Bewegliche Sprites updaten: KI der Ghosts usw...
+    entities_group.update(windowsize=(WINWIDTHPX, WINHEIGHTPX),
+                        dt=dt, walls_group=walls_group,
+                        pacman=pacman, pacman_direction=pacman_direction,
+                        game_data=game_data)
+
+
+def ready_mode(dt):
+    global ready_timer, mode
+
+    score_text = font.render(f"READY!", True, (255, 255, 0))
+    SCREEN.blit(score_text, score_text.get_rect(center=(WINWIDTHPX/2, 18*const.UNIT)))
+
+    if ready_timer > const.READY_INTERVAL:
+        ready_timer = 0.0
+        mode = const.NORMAL_MODE
+        return
+
+    ready_timer += dt
+
+
+def death_mode(dt):
+    global death_timer, mode
+
+    if death_timer > const.DEATH_INTERVAL:
+        reset_entity_sprites(dt)
+        game_data["lives"] -= 1
+        death_timer = 0.0
+        mode = const.READY_MODE
+        return
+    
+    death_timer += dt
+
+
+def all_pellets_mode(dt):
+    global all_pellets_timer, mode
+
+    if all_pellets_timer > const.ALL_PELLETS_INTERVAL:
+        reset_entity_sprites(dt)
+        gamemap.load_pellets(MAPWIDTH, MAPHEIGHT, mapcontent, pellets_group)
+        all_pellets_timer = 0.0
+        mode = const.READY_MODE
+        return
+    
+    all_pellets_timer += dt
+
+
+while mode != const.EXIT_MODE:
     # Zeitlicher Abstand zwischen Frames
     dt = clock.tick(60) / 1000.0
 
     for event in pygame.event.get():
         # Spiel beenden
         if event.type == pygame.QUIT:
-            running = False
+            mode = const.EXIT_MODE
         
         # Tasteneingabe des Benutzers lesen
         if event.type == pygame.KEYDOWN:
@@ -78,34 +169,26 @@ while running:
                 case pygame.K_DOWN:
                     pacman.try_direction = 'd'
     
-    # Pellets neu laden, wenn alle gegessen wurden
-    if len(pellets_group) == 0:
-        gamemap.load_pellets(MAPWIDTH, MAPHEIGHT, mapcontent, pellets_group)
-    
-    for ghost in ghosts_group:
-        if pacman.hitbox.colliderect(ghost.hitbox):
-            if game_data["score"] > highscore:
-                with open(const.HIGHSCORE_PATH, "w") as file:
-                    file.write(str(game_data["score"]))
-            running = False
-    
     # Schwarzer Hintergrund
     SCREEN.fill((0, 0, 0))
+    
+    match mode:
+        case const.NORMAL_MODE: normal_mode(dt)
+        case const.READY_MODE: ready_mode(dt)
+        case const.DEATH_MODE: death_mode(dt)
+        case const.ALL_PELLETS_MODE: all_pellets_mode(dt)
 
+    # Aktuelle Punktzahl und Highscore
     score_text = font.render(f"SCORE {game_data['score']}", True, (255, 255, 255))
     SCREEN.blit(score_text, score_text.get_rect(center=(WINWIDTHPX/2, (WINHEIGHT-3)*const.UNIT)))
 
     highscore_text = font.render(f"HIGHSCORE {highscore}", True, (255, 255, 255))
     SCREEN.blit(highscore_text, highscore_text.get_rect(center=(WINWIDTHPX/2, (WINHEIGHT-1)*const.UNIT)))
 
-    # Pellets updaten: Löschen sich, wenn von Pac-Man berührt
-    pellets_group.update(pacman=pacman, game_data=game_data, dt=dt, pellets_group=pellets_group)
-    # Bewegliche Sprites updaten: KI der Ghosts usw...
-    entities_group.update(windowsize=(WINWIDTHPX, WINHEIGHTPX),
-                          dt=dt, walls_group=walls_group,
-                          pacman=pacman, pacman_direction=pacman_direction,
-                          game_data=game_data)
-    
+    # Pac-Mans Leben
+    for i in range(game_data["lives"]):
+        SCREEN.blit(life_texture, pygame.Rect(i * const.UNIT*2, (WINHEIGHT-3)*const.UNIT, const.UNIT*2, const.UNIT*2))
+
     # Alle Sprites zeichnen
     walls_group.draw(SCREEN)
     pellets_group.draw(SCREEN)

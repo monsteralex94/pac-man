@@ -145,6 +145,11 @@ class EntitySprite(pygame.sprite.Sprite):
         # Neue, angepasste Position
         self.rect.topleft = (int(self.float_pos.x), int(self.float_pos.y))
         self.hitbox.center = self.rect.center
+    
+    def set_pos(self, pos):
+        self.rect.left, self.rect.top = pos
+        self.hitbox.left, self.hitbox.top = pos
+        self.float_pos.x, self.float_pos.y = pos
 
     def update(self, **kwargs):
         """Update-Funktion des Entity Sprites"""
@@ -156,6 +161,8 @@ class Pacman(EntitySprite):
 
     def __init__(self, start_position: tuple[int, int]) -> None:
         super().__init__(start_position)
+
+        self.start_position = start_position
 
         # Frames für die Animation
         with as_file(files("pac_man").joinpath(f"resources/pacman/0.png")) as path0:
@@ -191,7 +198,8 @@ class Pacman(EntitySprite):
         self.texture_timer += kwargs["dt"]
 
         ########### BEWEGUNG
-        self.movement(const.PACMAN_SPEED, kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"])
+        if "move" not in kwargs or kwargs["move"]:
+            self.movement(const.PACMAN_SPEED, kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"])
 
 
 def direct_follow(current_pos, follow_pos, walls_group) -> str:
