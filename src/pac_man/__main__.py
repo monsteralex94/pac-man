@@ -34,9 +34,11 @@ pacman_direction.update(pacman=pacman)
 ghosts_group = pygame.sprite.Group()
 ghost1 = sprites.Ghost1(const.GHOST1_START_POS)
 ghost2 = sprites.Ghost2(const.GHOST2_START_POS)
-ghosts_group.add(ghost1, ghost2)
+ghost3 = sprites.Ghost3(const.GHOST3_START_POS)
+ghost4 = sprites.Ghost4(const.GHOST4_START_POS)
+ghosts_group.add(ghost1, ghost2, ghost3, ghost4)
 
-entities_group.add(pacman, pacman_direction, ghost1, ghost2)
+entities_group.add(pacman, pacman_direction, ghost1, ghost2, ghost3, ghost4)
 
 # Textur für Pac-Mans Leben
 with as_file(files("pac_man").joinpath(f"resources/pacman/1.png")) as path:
@@ -70,7 +72,9 @@ mode = const.READY_MODE
 def reset_entity_sprites(dt):
     ghost1.set_pos(const.GHOST1_START_POS)
     ghost2.set_pos(const.GHOST2_START_POS)
-    ghost1.start, ghost2.start = True, True
+    ghost3.set_pos(const.GHOST3_START_POS)
+    ghost4.set_pos(const.GHOST4_START_POS)
+    ghost1.start, ghost2.start, ghost3.start, ghost4.start = True, True, True, True
 
     pacman.set_pos(const.PACMAN_START_POS)
     pacman.try_direction = 'l'
@@ -97,7 +101,7 @@ def normal_mode(dt):
                 if game_data["score"] > highscore:
                     with open(const.HIGHSCORE_PATH, "w") as file:
                         file.write(str(game_data["score"]))
-                mode = const.EXIT_MODE
+                mode = const.ABS_DEATH_MODE
 
     # Pellets updaten: Löschen sich, wenn von Pac-Man berührt
     pellets_group.update(pacman=pacman, game_data=game_data, dt=dt, pellets_group=pellets_group)
@@ -105,7 +109,7 @@ def normal_mode(dt):
     entities_group.update(windowsize=(WINWIDTHPX, WINHEIGHTPX),
                         dt=dt, walls_group=walls_group,
                         pacman=pacman, pacman_direction=pacman_direction,
-                        game_data=game_data)
+                        ghost1=ghost1, game_data=game_data)
 
 
 def ready_mode(dt):
@@ -130,6 +134,19 @@ def death_mode(dt):
         game_data["lives"] -= 1
         death_timer = 0.0
         mode = const.READY_MODE
+        return
+    
+    death_timer += dt
+
+
+def abs_death_mode(dt):
+    global death_timer, mode
+
+    if death_timer > const.DEATH_INTERVAL:
+        reset_entity_sprites(dt)
+        game_data["lives"] -= 1
+        death_timer = 0.0
+        mode = const.EXIT_MODE
         return
     
     death_timer += dt
@@ -176,6 +193,7 @@ while mode != const.EXIT_MODE:
         case const.NORMAL_MODE: normal_mode(dt)
         case const.READY_MODE: ready_mode(dt)
         case const.DEATH_MODE: death_mode(dt)
+        case const.ABS_DEATH_MODE: abs_death_mode(dt)
         case const.ALL_PELLETS_MODE: all_pellets_mode(dt)
 
     # Aktuelle Punktzahl und Highscore

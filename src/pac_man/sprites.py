@@ -51,7 +51,7 @@ class Wall(StaticSprite):
 class EntitySprite(pygame.sprite.Sprite):
     """Elternklasse für bewegliche Sprites"""
 
-    def __init__(self, start_position: tuple[int, int]) -> None:
+    def __init__(self, start_position) -> None:
         super().__init__()
 
         # Aktuelles Frame
@@ -159,7 +159,7 @@ class EntitySprite(pygame.sprite.Sprite):
 class Pacman(EntitySprite):
     "Klasse für Pac-Man"
 
-    def __init__(self, start_position: tuple[int, int]) -> None:
+    def __init__(self, start_position) -> None:
         super().__init__(start_position)
 
         self.start_position = start_position
@@ -226,7 +226,7 @@ def direct_follow(current_pos, follow_pos, walls_group) -> str:
 class Ghost1(EntitySprite):
     "Klasse für Geist"
 
-    def __init__(self, start_position: tuple[int, int]) -> None:
+    def __init__(self, start_position) -> None:
         super().__init__(start_position)
         
         with as_file(files("pac_man").joinpath(f"resources/ghosts/red.png")) as path:
@@ -265,7 +265,7 @@ class Ghost1(EntitySprite):
 class Ghost2(EntitySprite):
     "Klasse für Geist"
 
-    def __init__(self, start_position: tuple[int, int]) -> None:
+    def __init__(self, start_position) -> None:
         super().__init__(start_position)
 
         with as_file(files("pac_man").joinpath(f"resources/ghosts/pink.png")) as path:
@@ -298,6 +298,99 @@ class Ghost2(EntitySprite):
         if self.dir_switch_timer > const.GHOST_DIRECTION_SWITCH_INTERVAL:
             self.dir_switch_timer = 0
             self.try_direction = direct_follow(self.rect.center, follow_pos, kwargs["walls_group"])
+
+        self.dir_switch_timer += kwargs["dt"]
+
+        self.movement(const.GHOST_SPEED, kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"])
+
+
+class Ghost3(EntitySprite):
+    "Klasse für Geist"
+
+    def __init__(self, start_position) -> None:
+        super().__init__(start_position)
+
+        with as_file(files("pac_man").joinpath(f"resources/ghosts/cyan.png")) as path:
+            orig_image = pygame.transform.scale(pygame.image.load(path), (const.UNIT*2, const.UNIT*2))
+        
+        self.frames = orig_image, pygame.transform.flip(orig_image, True, False)
+        
+        self.image = self.frames[0]
+        self.dir_switch_timer = 0.0
+
+        self.start = True
+ 
+    def update(self, **kwargs):
+        if self.start:
+            pos = self.rect.center
+            self.try_direction = 'u'
+
+            self.movement(const.GHOST_SPEED, kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"], True)
+
+            if self.rect.center == pos:
+                self.start = False
+            
+            return
+
+        self.image = self.frames[int(self.rect.center[0] < kwargs["pacman"].rect.center[0])]
+
+        follow_pos_1 = kwargs["ghost1"].rect.center
+        follow_pos_2 = kwargs["pacman"].rect.center[0] + dmap[kwargs["pacman"].try_direction][0] * const.UNIT * 2, \
+            kwargs["pacman"].rect.center[1] + dmap[kwargs["pacman"].try_direction][1] * const.UNIT * 2
+
+        follow_pos = 2 * follow_pos_2[0] - follow_pos_1[0], \
+            2 * follow_pos_2[1] - follow_pos_1[1]
+
+        if self.dir_switch_timer > const.GHOST_DIRECTION_SWITCH_INTERVAL:
+            self.dir_switch_timer = 0
+            self.try_direction = direct_follow(self.rect.center, follow_pos, kwargs["walls_group"])
+
+        self.dir_switch_timer += kwargs["dt"]
+
+        self.movement(const.GHOST_SPEED, kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"])
+
+
+class Ghost4(EntitySprite):
+    "Klasse für Geist"
+
+    def __init__(self, start_position) -> None:
+        super().__init__(start_position)
+
+        with as_file(files("pac_man").joinpath(f"resources/ghosts/yellow.png")) as path:
+            orig_image = pygame.transform.scale(pygame.image.load(path), (const.UNIT*2, const.UNIT*2))
+        
+        self.frames = orig_image, pygame.transform.flip(orig_image, True, False)
+        
+        self.image = self.frames[0]
+        self.dir_switch_timer = 0.0
+
+        self.start = True
+ 
+    def update(self, **kwargs):
+        if self.start:
+            pos = self.rect.center
+            self.try_direction = 'u'
+
+            self.movement(const.GHOST_SPEED, kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"], True)
+
+            if self.rect.center == pos:
+                self.start = False
+            
+            return
+
+        self.image = self.frames[int(self.rect.center[0] < kwargs["pacman"].rect.center[0])]
+
+        follow_pos = kwargs["pacman"].rect.center
+
+        if self.dir_switch_timer > const.GHOST_DIRECTION_SWITCH_INTERVAL:
+            self.dir_switch_timer = 0
+            self.try_direction = direct_follow(self.rect.center, 
+                follow_pos if
+                    ((follow_pos[0] - self.rect.center[0]) ** 2 +
+                     (follow_pos[1] - self.rect.center[1]) ** 2) ** 0.5
+                     > const.UNIT*8
+                else (0, kwargs["windowsize"][1]),
+                kwargs["walls_group"])
 
         self.dir_switch_timer += kwargs["dt"]
 
