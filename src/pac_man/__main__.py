@@ -68,11 +68,11 @@ ready_timer = 0.0
 death_timer = 0.0
 all_pellets_timer = 0.0
 
-ghost_timer = const.GHOST_INTERVAL(game_data["ghost_mode"], game_data["ghost_mode_cycle"])
+ghost_mode_timer = const.GHOST_MODE_INTERVAL(game_data)
 
 # Main-Loop
 clock = pygame.time.Clock()
-mode = const.READY_MODE
+phase = const.READY_PHASE
 
 def reset_entity_sprites(dt):
     ghost1.set_pos(const.GHOST1_START_POS)
@@ -90,37 +90,35 @@ def reset_entity_sprites(dt):
     pacman_direction.update(pacman=pacman)
 
 
-def normal_mode(dt):
-    global ready_timer, all_pellets_timer, ghost_timer, mode, running
+def normal_phase(dt):
+    global ready_timer, all_pellets_timer, ghost_mode_timer, phase, running
 
     # Pellets neu laden, wenn alle gegessen wurden
     if len(pellets_group) == 0:
         all_pellets_timer = 0.0
-        mode = const.ALL_PELLETS_MODE
+        phase = const.ALL_PELLETS_PHASE
     
     for ghost in ghosts_group:
         if pacman.hitbox.colliderect(ghost.hitbox):
             if game_data["lives"] > 0:
-                mode = const.DEATH_MODE
+                phase = const.DEATH_PHASE
             else:
                 if game_data["score"] > highscore:
                     with open(const.HIGHSCORE_PATH, "w") as file:
                         file.write(str(game_data["score"]))
-                mode = const.ABS_DEATH_MODE
+                phase = const.ABS_DEATH_PHASE
     
-    if ghost_timer <= 0.0:
+    if ghost_mode_timer <= 0.0:
         if game_data["ghost_mode"] == const.GHOST_SCATTER_MODE:
             game_data["ghost_mode"] = const.GHOST_CHASE_MODE
         elif game_data["ghost_mode"] == const.GHOST_CHASE_MODE:
             game_data["ghost_mode"] = const.GHOST_SCATTER_MODE
             game_data["ghost_mode_cycle"] += 1
         
-        ghost_timer = const.GHOST_INTERVAL(game_data["ghost_mode"], game_data["ghost_mode_cycle"])
+        ghost_mode_timer = const.GHOST_MODE_INTERVAL(game_data)
 
-    ghost_timer -= dt
+    ghost_mode_timer -= dt
     
-    print(game_data["ghost_mode"], game_data["ghost_mode_cycle"], ghost_timer)
-
     # Pellets updaten: Löschen sich, wenn von Pac-Man berührt
     pellets_group.update(pacman=pacman, game_data=game_data, dt=dt, pellets_group=pellets_group)
     # Bewegliche Sprites updaten: KI der Ghosts usw...
@@ -130,48 +128,48 @@ def normal_mode(dt):
                         ghost1=ghost1, game_data=game_data)
 
 
-def ready_mode(dt):
-    global ready_timer, mode
+def ready_phase(dt):
+    global ready_timer, phase
 
     score_text = font.render(f"READY!", True, (255, 255, 0))
     SCREEN.blit(score_text, score_text.get_rect(center=(WINWIDTHPX/2, 18*const.UNIT)))
 
     if ready_timer > const.READY_INTERVAL:
         ready_timer = 0.0
-        mode = const.NORMAL_MODE
+        phase = const.NORMAL_PHASE
         return
 
     ready_timer += dt
 
 
-def death_mode(dt):
-    global death_timer, mode
+def death_phase(dt):
+    global death_timer, phase
 
     if death_timer > const.DEATH_INTERVAL:
         reset_entity_sprites(dt)
         game_data["lives"] -= 1
         death_timer = 0.0
-        mode = const.READY_MODE
+        phase = const.READY_PHASE
         return
     
     death_timer += dt
 
 
-def abs_death_mode(dt):
-    global death_timer, mode
+def abs_death_phase(dt):
+    global death_timer, phase
 
     if death_timer > const.DEATH_INTERVAL:
         reset_entity_sprites(dt)
         game_data["lives"] -= 1
         death_timer = 0.0
-        mode = const.EXIT_MODE
+        phase = const.EXIT_PHASE
         return
     
     death_timer += dt
 
 
-def all_pellets_mode(dt):
-    global all_pellets_timer, mode
+def all_pellets_phase(dt):
+    global all_pellets_timer, phase
 
     if all_pellets_timer > const.ALL_PELLETS_INTERVAL:
         game_data["level"] += 1
@@ -180,20 +178,20 @@ def all_pellets_mode(dt):
         reset_entity_sprites(dt)
         gamemap.load_pellets(MAPWIDTH, MAPHEIGHT, mapcontent, pellets_group)
         all_pellets_timer = 0.0
-        mode = const.READY_MODE
+        phase = const.READY_PHASE
         return
     
     all_pellets_timer += dt
 
 
-while mode != const.EXIT_MODE:
+while phase != const.EXIT_PHASE:
     # Zeitlicher Abstand zwischen Frames
     dt = clock.tick(60) / 1000.0
 
     for event in pygame.event.get():
         # Spiel beenden
         if event.type == pygame.QUIT:
-            mode = const.EXIT_MODE
+            phase = const.EXIT_PHASE
         
         # Tasteneingabe des Benutzers lesen
         if event.type == pygame.KEYDOWN:
@@ -210,12 +208,12 @@ while mode != const.EXIT_MODE:
     # Schwarzer Hintergrund
     SCREEN.fill((0, 0, 0))
     
-    match mode:
-        case const.NORMAL_MODE: normal_mode(dt)
-        case const.READY_MODE: ready_mode(dt)
-        case const.DEATH_MODE: death_mode(dt)
-        case const.ABS_DEATH_MODE: abs_death_mode(dt)
-        case const.ALL_PELLETS_MODE: all_pellets_mode(dt)
+    match phase:
+        case const.NORMAL_PHASE: normal_phase(dt)
+        case const.READY_PHASE: ready_phase(dt)
+        case const.DEATH_PHASE: death_phase(dt)
+        case const.ABS_DEATH_PHASE: abs_death_phase(dt)
+        case const.ALL_PELLETS_PHASE: all_pellets_phase(dt)
 
     # Aktuelle Punktzahl und Highscore
     score_text = font.render(f"SCORE {game_data['score']}", True, (255, 255, 255))
