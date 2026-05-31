@@ -82,6 +82,10 @@ def reset_entity_sprites(dt):
     ghost1.try_direction = 'r'
     ghost2.start, ghost3.start, ghost4.start = True, True, True
 
+    for ghost in ghosts_group:
+        ghost.frightened = False
+        ghost.update_image(pacman.rect.center[0])
+
     pacman.set_pos(const.PACMAN_START_POS)
     pacman.try_direction = 'l'
     pacman.curr_direction = 'l'
@@ -109,10 +113,7 @@ def normal_phase(dt):
         if pacman.hitbox.colliderect(ghost.hitbox):
             if ghost.frightened:
                 game_data["score"] += 100
-                ghost.set_pos(const.GHOST3_START_POS)
-                ghost.frightened = False
-                ghost.start = True
-                ghost.try_direction = 'u'
+                ghost.reset_frightened()
             else:
                 if game_data["lives"] > 0:
                     phase_timer = const.DEATH_INTERVAL
@@ -166,6 +167,9 @@ def death_phase(dt):
     if phase_timer <= 0.0:
         reset_entity_sprites(dt)
         game_data["lives"] -= 1
+        for ghost in ghosts_group:
+            ghost.frightened = False
+            ghost.update_image(pacman.rect.center[0])
         phase_timer = const.READY_INTERVAL
         phase = const.Phase.READY
         return
