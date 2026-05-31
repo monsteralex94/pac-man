@@ -65,10 +65,7 @@ game_data = {
     "ghost_mode_cycle": 1,
 }
 
-ready_timer = 0.0
-death_timer = 0.0
-all_pellets_timer = 0.0
-
+phase_timer = const.READY_INTERVAL
 ghost_mode_timer = const.GHOST_MODE_INTERVAL(game_data)
 
 # Main-Loop
@@ -92,21 +89,24 @@ def reset_entity_sprites(dt):
 
 
 def normal_phase(dt):
-    global ready_timer, all_pellets_timer, ghost_mode_timer, phase, running
+    global phase_timer, ghost_mode_timer, phase, running
 
     # Pellets neu laden, wenn alle gegessen wurden
     if len(pellets_group) == 0:
-        all_pellets_timer = 0.0
+        phase_timer = const.ALL_PELLETS_INTERVAL
         phase = const.ALL_PELLETS_PHASE
     
     for ghost in ghosts_group:
         if pacman.hitbox.colliderect(ghost.hitbox):
             if game_data["lives"] > 0:
+                phase_timer = const.DEATH_INTERVAL
                 phase = const.DEATH_PHASE
             else:
                 if game_data["score"] > highscore:
                     with open(const.HIGHSCORE_PATH, "w") as file:
                         file.write(str(game_data["score"]))
+
+                phase_timer = const.DEATH_INTERVAL
                 phase = const.ABS_DEATH_PHASE
     
     if ghost_mode_timer <= 0.0:
@@ -131,59 +131,57 @@ def normal_phase(dt):
 
 
 def ready_phase(dt):
-    global ready_timer, phase
+    global phase_timer, phase
 
     score_text = font.render(f"READY!", True, (255, 255, 0))
     SCREEN.blit(score_text, score_text.get_rect(center=(WINWIDTHPX/2, 18*const.UNIT)))
 
-    if ready_timer > const.READY_INTERVAL:
-        ready_timer = 0.0
+    if phase_timer <= 0.0:
         phase = const.NORMAL_PHASE
         return
 
-    ready_timer += dt
+    phase_timer -= dt
 
 
 def death_phase(dt):
-    global death_timer, phase
+    global phase_timer, phase
 
-    if death_timer > const.DEATH_INTERVAL:
+    if phase_timer <= 0.0:
         reset_entity_sprites(dt)
         game_data["lives"] -= 1
-        death_timer = 0.0
+        phase_timer = const.READY_INTERVAL
         phase = const.READY_PHASE
         return
     
-    death_timer += dt
+    phase_timer -= dt
 
 
 def abs_death_phase(dt):
-    global death_timer, phase
+    global phase_timer, phase
 
-    if death_timer > const.DEATH_INTERVAL:
+    if phase_timer <= 0.0:
         reset_entity_sprites(dt)
         game_data["lives"] -= 1
-        death_timer = 0.0
         phase = const.EXIT_PHASE
         return
     
-    death_timer += dt
+    phase_timer -= dt
 
 
 def all_pellets_phase(dt):
-    global all_pellets_timer, phase
+    global phase_timer, phase
 
-    if all_pellets_timer > const.ALL_PELLETS_INTERVAL:
+    if phase_timer <= 0.0:
         game_data["level"] += 1
         game_data["ghost_mode"] = const.GHOST_SCATTER_MODE
         game_data["ghost_mode_cycle"] = 1
         reset_entity_sprites(dt)
         gamemap.load_pellets(MAPWIDTH, MAPHEIGHT, mapcontent, pellets_group)
-        all_pellets_timer = 0.0
+        phase_timer = const.READY_INTERVAL
         phase = const.READY_PHASE
         return
-    
-    all_pellets_timer += dt
+
+    phase_timer -= dt
 
 
 while phase != const.EXIT_PHASE:
