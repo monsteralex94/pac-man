@@ -1,4 +1,62 @@
 from pathlib import Path
+from enum import IntEnum
+
+class Phase(IntEnum):
+    EXIT = 0
+    NORMAL = 1
+    READY = 2
+    DEATH = 3
+    ABS_DEATH = 4
+    ALL_PELLETS = 5
+
+class GhostMode(IntEnum):
+    SCATTER = 1
+    CHASE = 2
+
+
+def GHOST_MODE_INTERVAL(game_data):
+    match game_data["ghost_mode"]:
+        case GhostMode.SCATTER:
+            if game_data["ghost_mode_cycle"] <= 2:
+                return 7.0
+            elif game_data["ghost_mode_cycle"] == 3:
+                return 5.0
+            elif game_data["ghost_mode_cycle"] >= 4:
+                return 0.0
+        case GhostMode.CHASE:
+            if game_data["ghost_mode_cycle"] <= 3:
+                return 20.0
+            else:
+                return float('inf')
+        
+    return 0.0
+
+
+def GHOST_FRIGHTENED_INTERVAL(game_data):
+    if game_data["level"] < 5: return 6.0
+    elif game_data["level"] < 9: return 3.0
+    elif game_data["level"] < 21: return 1.0
+    else: return 0.0
+
+
+def SPEED(game_data, is_pacman, frightened=False):
+    speed = UNIT * 12
+
+    if is_pacman:
+        if game_data["level"] < 5: speed *= 0.8
+        elif game_data["level"] < 9: speed *= 0.9
+        elif game_data["level"] < 21: speed *= 1.0
+        else: speed *= 0.9
+        return speed
+    else:
+        if game_data["level"] < 5: speed *= 0.75
+        elif game_data["level"] < 9: speed *= 0.85
+        elif game_data["level"] < 21: speed *= 0.95
+        else: speed *= 0.95
+
+        if frightened: return speed * 0.6
+        else: return speed
+
 
 FPS = 60
 UNIT = 16
@@ -13,49 +71,8 @@ GHOST4_START_POS = UNIT*15, UNIT*14
 
 GHOST1_SPEEDUP_PELLET_NUM = 150
 
-EXIT_PHASE = 0
-NORMAL_PHASE = 1
-READY_PHASE = 2
-DEATH_PHASE = 3
-ABS_DEATH_PHASE = 4
-ALL_PELLETS_PHASE = 5
-
-GHOST_SCATTER_MODE = 0
-GHOST_CHASE_MODE = 1
-
 READY_INTERVAL = 1.5
 DEATH_INTERVAL = 1.0
 ALL_PELLETS_INTERVAL = 1.0
 PACMAN_TEXTURE_SWITCH_INTERVAL = 0.1
 POWER_PELLET_BLINK_INTERVAL = 0.15
-
-def GHOST_MODE_INTERVAL(game_data):
-    if game_data["ghost_mode"] == GHOST_SCATTER_MODE:
-        if game_data["ghost_mode_cycle"] <= 2:
-            return 7.0
-        elif game_data["ghost_mode_cycle"] == 3:
-            return 5.0
-        elif game_data["ghost_mode_cycle"] >= 4:
-            return 0.0
-    elif game_data["ghost_mode"] == GHOST_CHASE_MODE:
-        if game_data["ghost_mode_cycle"] <= 3:
-            return 20.0
-        else:
-            return float('inf')
-    
-    return 0.0
-
-
-def SPEED(game_data, pacman):
-    base_speed = UNIT * 12
-
-    if pacman:
-        if game_data["level"] < 5: return base_speed * 0.8
-        elif game_data["level"] < 9: return base_speed * 0.9
-        elif game_data["level"] < 21: return base_speed * 1.0
-        else: return base_speed * 0.9
-    else:
-        if game_data["level"] < 5: return base_speed * 0.75
-        elif game_data["level"] < 9: return base_speed * 0.85
-        elif game_data["level"] < 21: return base_speed * 0.95
-        else: return base_speed * 0.95
