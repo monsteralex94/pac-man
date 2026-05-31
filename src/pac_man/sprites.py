@@ -5,10 +5,17 @@ from importlib.resources import files, as_file
 
 
 dmap = {
-    'r': (1, 0),
     'u': (0, -1),
     'l': (-1, 0),
     'd': (0, 1),
+    'r': (1, 0),
+}
+
+opp_d = {
+    'u': 'd',
+    'l': 'r',
+    'd': 'u',
+    'r': 'l'
 }
 
 
@@ -199,14 +206,17 @@ class Pacman(EntitySprite):
 
         ########### BEWEGUNG
         if "move" not in kwargs or kwargs["move"]:
-            self.movement(const.PACMAN_SPEED, kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"])
+            self.movement(const.SPEED(kwargs["game_data"], True), kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"])
 
 
-def direct_follow(current_pos, follow_pos, walls_group) -> str:
+def direct_follow(current_pos, follow_pos, curr_direction, walls_group) -> str:
     min_distance = float('inf')
-    min_direction = 'l'
+    min_direction = 'u'
 
     for direction_let, direction_num in dmap.items():
+        if direction_let == opp_d[curr_direction]:
+            continue
+
         new_x = current_pos[0] + direction_num[0] * (const.UNIT + 1)
         new_y = current_pos[1] + direction_num[1] * (const.UNIT + 1)
 
@@ -232,42 +242,36 @@ class Ghost1(EntitySprite):
         with as_file(files("pac_man").joinpath(f"resources/ghosts/red.png")) as path:
             orig_image = pygame.transform.scale(pygame.image.load(path), (const.UNIT*2, const.UNIT*2))
         
-        self.frames = orig_image, pygame.transform.flip(orig_image, True, False)
+        with as_file(files("pac_man").joinpath(f"resources/ghosts/red_angry.png")) as path:
+            orig_image_angry = pygame.transform.scale(pygame.image.load(path), (const.UNIT*2, const.UNIT*2))
         
-        self.image = self.frames[0]
-        self.dir_switch_timer = 0.0
-
+        self.frames = (orig_image, pygame.transform.flip(orig_image, True, False)), \
+            (orig_image_angry, pygame.transform.flip(orig_image_angry, True, False))
+        
+        self.image = self.frames[0][0]
         self.start = True
  
     def update(self, **kwargs):
         if self.start:
-            pos = self.rect.center
-            self.try_direction = 'u'
+            self.try_direction = 'r'
+            self.start = False
+        
+        angry = kwargs["num_pellets"] <= const.GHOST1_SPEEDUP_PELLET_NUM
 
-            self.movement(const.GHOST_SPEED, kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"], True)
-
-            if self.rect.center == pos:
-                self.start = False
-            
-            return
-
-        self.image = self.frames[int(self.rect.center[0] < kwargs["pacman"].rect.center[0])]
+        self.image = self.frames[int(angry)][int(self.rect.center[0] < kwargs["pacman"].rect.center[0])]
 
         follow_pos = kwargs["pacman"].rect.center \
-            if kwargs["game_data"]["ghost_mode"] == const.GHOST_CHASE_MODE \
+            if kwargs["game_data"]["ghost_mode"] == const.GHOST_CHASE_MODE or angry \
             else (kwargs["windowsize"][0], 0)
         
-        direction_switch_interval = const.GHOST_CHASE_DIRECTION_SWITCH_INTERVAL \
-            if kwargs["game_data"]["ghost_mode"] == const.GHOST_CHASE_MODE \
-            else const.GHOST_SCATTER_DIRECTION_SWITCH_INTERVAL
-
-        if self.dir_switch_timer > direction_switch_interval:
-            self.dir_switch_timer = 0
-            self.try_direction = direct_follow(self.rect.center, follow_pos, kwargs["walls_group"])
-
-        self.dir_switch_timer += kwargs["dt"]
-
-        self.movement(const.GHOST_SPEED, kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"])
+        for crossing_rect in kwargs["crossing_rects"]:
+            if self.rect == crossing_rect:
+                self.try_direction = direct_follow(self.rect.center, follow_pos,
+                                                   self.curr_direction, kwargs["walls_group"])
+                self.last_crossing_rect = crossing_rect
+        
+        self.movement(const.SPEED(kwargs["game_data"], False) + (0.6 * const.UNIT if angry else 0.0),
+                      kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"])
 
 
 class Ghost2(EntitySprite):
@@ -291,9 +295,11 @@ class Ghost2(EntitySprite):
             pos = self.rect.center
             self.try_direction = 'u'
 
-            self.movement(const.GHOST_SPEED, kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"], True)
+            self.movement(const.SPEED(kwargs["game_data"], False), kwargs["windowsize"],
+                          kwargs["walls_group"], kwargs["dt"], True)
 
             if self.rect.center == pos:
+                self.try_direction = 'l'
                 self.start = False
             
             return
@@ -306,18 +312,16 @@ class Ghost2(EntitySprite):
         follow_pos = follow_pos \
             if kwargs["game_data"]["ghost_mode"] == const.GHOST_CHASE_MODE \
             else (0, 0)
-        
-        direction_switch_interval = const.GHOST_CHASE_DIRECTION_SWITCH_INTERVAL \
-            if kwargs["game_data"]["ghost_mode"] == const.GHOST_CHASE_MODE \
-            else const.GHOST_SCATTER_DIRECTION_SWITCH_INTERVAL
 
-        if self.dir_switch_timer > direction_switch_interval:
-            self.dir_switch_timer = 0
-            self.try_direction = direct_follow(self.rect.center, follow_pos, kwargs["walls_group"])
+        for crossing_rect in kwargs["crossing_rects"]:
+            if self.rect == crossing_rect:
+                self.try_direction = direct_follow(self.rect.center, follow_pos, self.curr_direction,
+                                                   kwargs["walls_group"])
+                self.last_crossing_rect = crossing_rect
 
         self.dir_switch_timer += kwargs["dt"]
 
-        self.movement(const.GHOST_SPEED, kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"])
+        self.movement(const.SPEED(kwargs["game_data"], False), kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"])
 
 
 class Ghost3(EntitySprite):
@@ -341,9 +345,11 @@ class Ghost3(EntitySprite):
             pos = self.rect.center
             self.try_direction = 'u'
 
-            self.movement(const.GHOST_SPEED, kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"], True)
+            self.movement(const.SPEED(kwargs["game_data"], False), kwargs["windowsize"],
+                          kwargs["walls_group"], kwargs["dt"], True)
 
             if self.rect.center == pos:
+                self.try_direction = 'r'
                 self.start = False
             
             return
@@ -360,17 +366,16 @@ class Ghost3(EntitySprite):
         else:
             follow_pos = kwargs["windowsize"]
         
-        direction_switch_interval = const.GHOST_CHASE_DIRECTION_SWITCH_INTERVAL \
-            if kwargs["game_data"]["ghost_mode"] == const.GHOST_CHASE_MODE \
-            else const.GHOST_SCATTER_DIRECTION_SWITCH_INTERVAL
-
-        if self.dir_switch_timer > direction_switch_interval:
-            self.dir_switch_timer = 0
-            self.try_direction = direct_follow(self.rect.center, follow_pos, kwargs["walls_group"])
+        for crossing_rect in kwargs["crossing_rects"]:
+            if self.rect == crossing_rect:
+                self.try_direction = direct_follow(self.rect.center, follow_pos, self.curr_direction,
+                                                   kwargs["walls_group"])
+                self.last_crossing_rect = crossing_rect
 
         self.dir_switch_timer += kwargs["dt"]
 
-        self.movement(const.GHOST_SPEED, kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"])
+        self.movement(const.SPEED(kwargs["game_data"], False), kwargs["windowsize"],
+                      kwargs["walls_group"], kwargs["dt"])
 
 
 class Ghost4(EntitySprite):
@@ -394,9 +399,11 @@ class Ghost4(EntitySprite):
             pos = self.rect.center
             self.try_direction = 'u'
 
-            self.movement(const.GHOST_SPEED, kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"], True)
+            self.movement(const.SPEED(kwargs["game_data"], False), kwargs["windowsize"],
+                          kwargs["walls_group"], kwargs["dt"], True)
 
             if self.rect.center == pos:
+                self.try_direction = 'l'
                 self.start = False
             
             return
@@ -407,23 +414,22 @@ class Ghost4(EntitySprite):
             if kwargs["game_data"]["ghost_mode"] == const.GHOST_CHASE_MODE \
             else (0, kwargs["windowsize"][1])
         
-        direction_switch_interval = const.GHOST_CHASE_DIRECTION_SWITCH_INTERVAL \
-            if kwargs["game_data"]["ghost_mode"] == const.GHOST_CHASE_MODE \
-            else const.GHOST_SCATTER_DIRECTION_SWITCH_INTERVAL
-
-        if self.dir_switch_timer > direction_switch_interval:
-            self.dir_switch_timer = 0
-            self.try_direction = direct_follow(self.rect.center, 
-                follow_pos if
-                    ((follow_pos[0] - self.rect.center[0]) ** 2 +
-                     (follow_pos[1] - self.rect.center[1]) ** 2) ** 0.5
-                     > const.UNIT*8
-                else (0, kwargs["windowsize"][1]),
-                kwargs["walls_group"])
+        for crossing_rect in kwargs["crossing_rects"]:
+            if self.rect == crossing_rect:
+                self.try_direction = direct_follow(self.rect.center, 
+                    follow_pos if
+                        ((follow_pos[0] - self.rect.center[0]) ** 2 +
+                        (follow_pos[1] - self.rect.center[1]) ** 2) ** 0.5
+                        > const.UNIT*8
+                    else (0, kwargs["windowsize"][1]),
+                    self.curr_direction,
+                    kwargs["walls_group"])
+                self.last_crossing_rect = crossing_rect
 
         self.dir_switch_timer += kwargs["dt"]
 
-        self.movement(const.GHOST_SPEED, kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"])
+        self.movement(const.SPEED(kwargs["game_data"], False), kwargs["windowsize"],
+                      kwargs["walls_group"], kwargs["dt"])
 
 
 class PacmanDirection(pygame.sprite.Sprite):

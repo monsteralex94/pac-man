@@ -18,11 +18,12 @@ MAPWIDTH,   MAPHEIGHT   = len(mapcontent[0]), len(mapcontent)
 WINWIDTH,   WINHEIGHT   = MAPWIDTH, MAPHEIGHT + 4
 WINWIDTHPX, WINHEIGHTPX = WINWIDTH * const.UNIT, WINHEIGHT * const.UNIT
 
-# Statische Sprites aus dem Map-Inhalt laden
+# Statische Sprites und Rects der Kreuzungen aus dem Map-Inhalt laden
 walls_group = pygame.sprite.Group()
 pellets_group = pygame.sprite.Group()
+crossing_rects: list[pygame.Rect] = []
 
-gamemap.load_all(MAPWIDTH, MAPHEIGHT, mapcontent, walls_group, pellets_group)
+gamemap.load_all(MAPWIDTH, MAPHEIGHT, mapcontent, walls_group, pellets_group, crossing_rects)
 
 # Bewegliche Sprites laden
 entities_group = pygame.sprite.Group()
@@ -125,7 +126,8 @@ def normal_phase(dt):
     entities_group.update(windowsize=(WINWIDTHPX, WINHEIGHTPX),
                         dt=dt, walls_group=walls_group,
                         pacman=pacman, pacman_direction=pacman_direction,
-                        ghost1=ghost1, game_data=game_data)
+                        ghost1=ghost1, num_pellets=len(pellets_group),
+                        crossing_rects=crossing_rects, game_data=game_data)
 
 
 def ready_phase(dt):

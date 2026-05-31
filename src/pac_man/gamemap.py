@@ -1,31 +1,32 @@
+import pygame
+
 from . import const
 from . import sprites
 
-def load_all(width, height, mapcontent, walls_group, pellets_group):
+def load_all(width, height, mapcontent, walls_group, pellets_group, crossing_rects):
     """Alle statischen Sprites aus dem Map-Inhalt laden"""
 
     for y in range(height):
         for x in range(width):
-            block = mapcontent[y][x]
-
-            if block == '#':
-                walls_group.add(sprites.Wall((x * const.UNIT, y * const.UNIT)))
-            elif block == '-':
-                walls_group.add(sprites.Wall((x * const.UNIT, y * const.UNIT), ghost=True))
-            elif block == '.':
-                pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
-            elif block == ':':
-                pellets_group.add(sprites.PowerPellet((x * const.UNIT, y * const.UNIT)))
+            match mapcontent[y][x]:
+                case '#': walls_group.add(sprites.Wall((x * const.UNIT, y * const.UNIT)))
+                case '-': walls_group.add(sprites.Wall((x * const.UNIT, y * const.UNIT), ghost=True))
+                case '.': pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
+                case '+': crossing_rects.append(pygame.Rect(x * const.UNIT, y * const.UNIT, const.UNIT*2, const.UNIT*2))
+                case ':':
+                    crossing_rects.append(pygame.Rect(x * const.UNIT, y * const.UNIT, const.UNIT*2, const.UNIT*2))
+                    pellets_group.add(sprites.PowerPellet((x * const.UNIT, y * const.UNIT)))
+                case 'x':
+                    crossing_rects.append(pygame.Rect(x * const.UNIT, y * const.UNIT, const.UNIT*2, const.UNIT*2))
+                    pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
 
 
 def load_pellets(width, height, mapcontent, pellets_group):
     """Nur Pellets aus dem Map-Inhalt laden"""
     
     for y in range(height):
-        for x in range(width):
-            block = mapcontent[y][x]
-
-            if block == '.':
-                pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
-            elif block == ':':
-                pellets_group.add(sprites.PowerPellet((x * const.UNIT, y * const.UNIT)))
+        for x in range(width):         
+            match mapcontent[y][x]:
+                case '.': pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
+                case ':': pellets_group.add(sprites.PowerPellet((x * const.UNIT, y * const.UNIT)))
+                case 'x': pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
