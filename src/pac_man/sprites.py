@@ -242,7 +242,6 @@ class Ghost(EntitySprite):
             [int(self.is_frightened)] \
                 [int(self.rect.center[0] < pacman_x)]
 
-    
     def starting(self, kwargs_dict):
         pos = self.rect.center
         self.try_direction = 'u'
