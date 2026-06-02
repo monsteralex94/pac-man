@@ -106,10 +106,10 @@ def normal_phase(dt):
     
     for power_pellet in power_pellets_group:
         if pacman.hitbox.colliderect(power_pellet.rect):
-            game_data["frightened_ghosts_eaten"] = 0
             for ghost in ghosts_group:
                 ghost.is_frightened = True
                 ghost.is_frightened_timer = 0.0
+            game_data["frightened_ghosts_eaten"] = 0
     
     for ghost in ghosts_group:
         if pacman.hitbox.colliderect(ghost.hitbox):
