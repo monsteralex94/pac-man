@@ -219,7 +219,7 @@ class Ghost(EntitySprite):
     def __init__(self, start_position) -> None:
         super().__init__(start_position)
 
-        self.frightened = False
+        self.is_frightened = False
         self.frightened_timer = 0.0
         self.start = True
 
@@ -237,26 +237,33 @@ class Ghost(EntitySprite):
 
         self.image = self.frames[0][0]
     
-    def starting(self, kwargs):
+    def starting(self, kwargs_dict):
         pos = self.rect.center
         self.try_direction = 'u'
 
-        self.movement(const.SPEED(kwargs["game_data"], False), kwargs["windowsize"],
-                      kwargs["walls_group"], kwargs["dt"], True)
+        self.movement(const.SPEED(kwargs_dict["game_data"], False), kwargs_dict["windowsize"],
+                      kwargs_dict["walls_group"], kwargs_dict["dt"], True)
 
         if self.rect.center == pos:
             self.try_direction = 'l'
             self.start = False
     
+    def run_frightened_timer(self, kwargs_dict):
+        if self.frightened_timer > const.GHOST_FRIGHTENED_INTERVAL(kwargs_dict["game_data"]):
+            self.frightened_timer = 0.0
+            self.is_frightened = False
+        
+        self.frightened_timer += kwargs_dict["dt"]
+    
     def reset_frightened(self):
         self.set_pos(const.GHOST3_START_POS)
-        self.frightened = False
+        self.is_frightened = False
         self.start = True
         self.try_direction = 'u'
     
     def update_image(self, pacman_x):
         self.image = self.frames \
-            [int(self.frightened)] \
+            [int(self.is_frightened)] \
                 [int(self.rect.center[0] < pacman_x)]
 
     def direct_follow(self, follow_pos, walls_group):
@@ -307,7 +314,7 @@ class Ghost1(Ghost):
         self.image = self.frames[0][0][0]
     
     def update_image(self, pacman_x):
-        self.image = self.frames[int(self.frightened)][int(self.angry)][int(self.rect.center[0] < pacman_x)]
+        self.image = self.frames[int(self.is_frightened)][int(self.angry)][int(self.rect.center[0] < pacman_x)]
  
     def update(self, **kwargs):
         if self.start:
@@ -317,14 +324,9 @@ class Ghost1(Ghost):
         self.angry = kwargs["num_pellets"] <= const.GHOST1_SPEEDUP_PELLET_NUM
         self.update_image(kwargs["pacman"].rect.center[0])
 
-        if self.frightened:
+        if self.is_frightened:
             follow_pos = mirror_point(kwargs["pacman"].rect.center, self.rect.center)
-
-            if self.frightened_timer > const.GHOST_FRIGHTENED_INTERVAL(kwargs["game_data"]):
-                self.frightened_timer = 0.0
-                self.frightened = False
-            
-            self.frightened_timer += kwargs["dt"]
+            self.run_frightened_timer(kwargs)
         else:
             match kwargs["game_data"]["ghost_mode"]:
                 case const.GhostMode.SCATTER:
@@ -336,7 +338,7 @@ class Ghost1(Ghost):
             if self.rect == crossing_rect:
                 self.direct_follow(follow_pos, kwargs["walls_group"])
         
-        self.movement(const.SPEED(kwargs["game_data"], False, self.frightened) + (0.6 * const.UNIT if self.angry else 0.0),
+        self.movement(const.SPEED(kwargs["game_data"], False, self.is_frightened) + (0.6 * const.UNIT if self.angry else 0.0),
                       kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"])
 
 
@@ -352,14 +354,9 @@ class Ghost2(Ghost):
 
         self.update_image(kwargs["pacman"].rect.center[0])
 
-        if self.frightened:
+        if self.is_frightened:
             follow_pos = mirror_point(kwargs["pacman"].rect.center, self.rect.center)
-
-            if self.frightened_timer > const.GHOST_FRIGHTENED_INTERVAL(kwargs["game_data"]):
-                self.frightened_timer = 0.0
-                self.frightened = False
-            
-            self.frightened_timer += kwargs["dt"]
+            self.run_frightened_timer(kwargs)
         else:
             match kwargs["game_data"]["ghost_mode"]:
                 case const.GhostMode.SCATTER:
@@ -372,7 +369,7 @@ class Ghost2(Ghost):
             if self.rect == crossing_rect:
                 self.direct_follow(follow_pos, kwargs["walls_group"])
 
-        self.movement(const.SPEED(kwargs["game_data"], False, self.frightened), kwargs["windowsize"],
+        self.movement(const.SPEED(kwargs["game_data"], False, self.is_frightened), kwargs["windowsize"],
                       kwargs["walls_group"], kwargs["dt"])
 
 
@@ -388,14 +385,9 @@ class Ghost3(Ghost):
 
         self.update_image(kwargs["pacman"].rect.center[0])
 
-        if self.frightened:
+        if self.is_frightened:
             follow_pos = mirror_point(kwargs["pacman"].rect.center, self.rect.center)
-
-            if self.frightened_timer > const.GHOST_FRIGHTENED_INTERVAL(kwargs["game_data"]):
-                self.frightened_timer = 0.0
-                self.frightened = False
-            
-            self.frightened_timer += kwargs["dt"]
+            self.run_frightened_timer(kwargs)
         else:
             match kwargs["game_data"]["ghost_mode"]:
                 case const.GhostMode.SCATTER:
@@ -412,7 +404,7 @@ class Ghost3(Ghost):
             if self.rect == crossing_rect:
                 self.direct_follow(follow_pos, kwargs["walls_group"])
 
-        self.movement(const.SPEED(kwargs["game_data"], False, self.frightened), kwargs["windowsize"],
+        self.movement(const.SPEED(kwargs["game_data"], False, self.is_frightened), kwargs["windowsize"],
                       kwargs["walls_group"], kwargs["dt"])
 
 
@@ -428,14 +420,9 @@ class Ghost4(Ghost):
 
         self.update_image(kwargs["pacman"].rect.center[0])
 
-        if self.frightened:
+        if self.is_frightened:
             follow_pos = mirror_point(kwargs["pacman"].rect.center, self.rect.center)
-
-            if self.frightened_timer > const.GHOST_FRIGHTENED_INTERVAL(kwargs["game_data"]):
-                self.frightened_timer = 0.0
-                self.frightened = False
-            
-            self.frightened_timer += kwargs["dt"]
+            self.run_frightened_timer(kwargs)
         else:
             match kwargs["game_data"]["ghost_mode"]:
                 case const.GhostMode.SCATTER:
@@ -453,7 +440,7 @@ class Ghost4(Ghost):
                     else (0, kwargs["windowsize"][1]),
                     kwargs["walls_group"])
 
-        self.movement(const.SPEED(kwargs["game_data"], False, self.frightened), kwargs["windowsize"],
+        self.movement(const.SPEED(kwargs["game_data"], False, self.is_frightened), kwargs["windowsize"],
                       kwargs["walls_group"], kwargs["dt"])
 
 

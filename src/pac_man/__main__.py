@@ -84,7 +84,7 @@ def reset_entity_sprites(dt):
     ghost2.start, ghost3.start, ghost4.start = True, True, True
 
     for ghost in ghosts_group:
-        ghost.frightened = False
+        ghost.is_frightened = False
         ghost.update_image(pacman.rect.center[0])
 
     pacman.set_pos(const.PACMAN_START_POS)
@@ -108,12 +108,12 @@ def normal_phase(dt):
         if pacman.hitbox.colliderect(power_pellet.rect):
             game_data["frightened_ghosts_eaten"] = 0
             for ghost in ghosts_group:
-                ghost.frightened = True
-                ghost.frightened_timer = 0.0
+                ghost.is_frightened = True
+                ghost.is_frightened_timer = 0.0
     
     for ghost in ghosts_group:
         if pacman.hitbox.colliderect(ghost.hitbox):
-            if ghost.frightened:
+            if ghost.is_frightened:
                 game_data["frightened_ghosts_eaten"] += 1
                 game_data["score"] += 100 * 2 ** game_data["frightened_ghosts_eaten"]
                 ghost.reset_frightened()
@@ -131,7 +131,7 @@ def normal_phase(dt):
     
     no_frightened = True
     for ghost in ghosts_group:
-        if ghost.frightened:
+        if ghost.is_frightened:
             no_frightened = False
             break
     if no_frightened:
@@ -179,7 +179,7 @@ def death_phase(dt):
         reset_entity_sprites(dt)
         game_data["lives"] -= 1
         for ghost in ghosts_group:
-            ghost.frightened = False
+            ghost.is_frightened = False
             ghost.update_image(pacman.rect.center[0])
         phase_timer = const.READY_INTERVAL
         phase = const.Phase.READY
