@@ -237,6 +237,12 @@ class Ghost(EntitySprite):
 
         self.image = self.frames[0][0]
     
+    def update_image(self, pacman_x):
+        self.image = self.frames \
+            [int(self.is_frightened)] \
+                [int(self.rect.center[0] < pacman_x)]
+
+    
     def starting(self, kwargs_dict):
         pos = self.rect.center
         self.try_direction = 'u'
@@ -260,11 +266,6 @@ class Ghost(EntitySprite):
         self.is_frightened = False
         self.start = True
         self.try_direction = 'u'
-    
-    def update_image(self, pacman_x):
-        self.image = self.frames \
-            [int(self.is_frightened)] \
-                [int(self.rect.center[0] < pacman_x)]
 
     def direct_follow(self, follow_pos, walls_group):
         min_distance = float('inf')
