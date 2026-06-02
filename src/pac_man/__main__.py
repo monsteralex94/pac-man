@@ -64,6 +64,7 @@ game_data = {
     "lives": 2,
     "ghost_mode": const.GhostMode.SCATTER,
     "ghost_mode_cycle": 1,
+    "frightened_ghosts_eaten": 0,
 }
 
 phase_timer = const.READY_INTERVAL
@@ -112,7 +113,8 @@ def normal_phase(dt):
     for ghost in ghosts_group:
         if pacman.hitbox.colliderect(ghost.hitbox):
             if ghost.frightened:
-                game_data["score"] += 100
+                game_data["frightened_ghosts_eaten"] += 1
+                game_data["score"] += 100 * 2 ** game_data["frightened_ghosts_eaten"]
                 ghost.reset_frightened()
             else:
                 if game_data["lives"] > 0:
@@ -125,6 +127,14 @@ def normal_phase(dt):
 
                     phase_timer = const.DEATH_INTERVAL
                     phase = const.Phase.ABS_DEATH
+    
+    no_frightened = True
+    for ghost in ghosts_group:
+        if ghost.frightened:
+            no_frightened = False
+            break
+    if no_frightened:
+        game_data["frightened_ghosts_eaten"] = 0
     
     if ghost_mode_timer <= 0.0:
         match game_data["ghost_mode"]:
