@@ -505,3 +505,31 @@ class PowerPellet(Pellet):
 
         if kwargs["pacman"].hitbox.collidepoint(*self.rect.center):
             self.kill()
+
+
+class Fruit(pygame.sprite.Sprite):
+    "Klasse für Früchte"
+    def __init__(self, position: tuple[int, int], level: int=0):
+        super().__init__()
+        self.frames = []
+
+        for i in range(6):
+            with as_file(files("pac_man").joinpath(f"resources/fruits/{i}.png")) as path:
+                self.frames.append(pygame.transform.scale(pygame.image.load(path), (2*const.UNIT, 2*const.UNIT)))
+        
+        self.image = self.frames[level]
+        self.image.set_alpha(0)
+        self.rect = self.image.get_rect(topleft=(position[0]-const.UNIT/2, position[1]))
+        self.points = 0
+        self.active = False
+        self.timer = 0.0
+
+    def update(self, **kwargs):
+        if self.timer <= 0.0: self.active = False
+        else: self.timer -= kwargs["dt"]
+
+        self.image.set_alpha(255 if self.active else 0)
+
+        level, self.points = const.FRUIT_LEVEL_AND_POINTS(kwargs["game_data"])
+        if level < 6: self.image = self.frames[level]
+        else: self.image = self.frames[5]

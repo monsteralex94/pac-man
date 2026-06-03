@@ -22,9 +22,10 @@ WINWIDTHPX, WINHEIGHTPX = WINWIDTH * const.UNIT, WINHEIGHT * const.UNIT
 walls_group = pygame.sprite.Group()
 pellets_group = pygame.sprite.Group()
 power_pellets_group = pygame.sprite.Group()
+fruits_group = pygame.sprite.Group()
 crossing_rects: list[pygame.Rect] = []
 
-gamemap.load_all(MAPWIDTH, MAPHEIGHT, mapcontent, walls_group, pellets_group, power_pellets_group, crossing_rects)
+gamemap.load_all(MAPWIDTH, MAPHEIGHT, mapcontent, walls_group, pellets_group, power_pellets_group, fruits_group, crossing_rects)
 
 # Bewegliche Sprites laden
 entities_group = pygame.sprite.Group()
@@ -111,6 +112,15 @@ def normal_phase(dt):
                 ghost.frightened_timer = 0.0
             game_data["frightened_ghosts_eaten"] = 0
     
+    for fruit in fruits_group:
+        if len(pellets_group) in (188, 88):
+            fruit.active = True
+            fruit.timer = const.FRUIT_INTERVAL
+        
+        if pacman.hitbox.colliderect(fruit.rect) and fruit.active:
+            game_data["score"] += fruit.points
+            fruit.active = False
+    
     for ghost in ghosts_group:
         if pacman.hitbox.colliderect(ghost.hitbox):
             if ghost.is_frightened:
@@ -126,7 +136,7 @@ def normal_phase(dt):
                         with open(const.HIGHSCORE_PATH, "w") as file:
                             file.write(str(game_data["score"]))
 
-                    phase_timer = const.DEATH_INTERVAL
+                    phase_timer = const.ABS_DEATH_INTERVAL
                     phase = const.Phase.ABS_DEATH
     
     no_frightened = True
@@ -151,6 +161,8 @@ def normal_phase(dt):
    
     # Pellets updaten: Löschen sich, wenn von Pac-Man berührt
     pellets_group.update(pacman=pacman, game_data=game_data, dt=dt, pellets_group=pellets_group)
+    # Früchte updaten: Art und Punktzahl
+    fruits_group.update(game_data=game_data, dt=dt)
     # Bewegliche Sprites updaten: KI der Ghosts usw...
     entities_group.update(windowsize=(WINWIDTHPX, WINHEIGHTPX),
                           dt=dt, walls_group=walls_group,
@@ -190,6 +202,9 @@ def death_phase(dt):
 
 def abs_death_phase(dt):
     global phase_timer, phase
+
+    score_text = font.render(f"GAME OVER", True, (255, 0, 0))
+    SCREEN.blit(score_text, score_text.get_rect(center=(WINWIDTHPX/2, 18*const.UNIT)))
 
     if phase_timer <= 0.0:
         reset_entity_sprites(dt)
@@ -264,6 +279,7 @@ while phase != const.Phase.EXIT:
     # Alle Sprites zeichnen
     walls_group.draw(SCREEN)
     pellets_group.draw(SCREEN)
+    fruits_group.draw(SCREEN)
     entities_group.draw(SCREEN)
 
     pygame.display.flip()

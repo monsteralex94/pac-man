@@ -58,6 +58,17 @@ def SPEED(game_data, is_pacman, frightened=False):
         else: return speed
 
 
+def FRUIT_LEVEL_AND_POINTS(game_data):
+    if game_data["level"] == 1: return 0, 100
+    elif game_data["level"] == 2: return 1, 300
+    elif game_data["level"] < 5: return 2, 500
+    elif game_data["level"] < 7: return 3, 700
+    elif game_data["level"] < 9: return 4, 1000
+    elif game_data["level"] < 11: return 5, 2000
+    elif game_data["level"] < 13: return 6, 3000
+    else: return 7, 5000
+
+
 FPS = 60
 UNIT = 16
 
@@ -73,6 +84,8 @@ GHOST1_SPEEDUP_PELLET_NUM = 150
 
 READY_INTERVAL = 1.5
 DEATH_INTERVAL = 1.0
+ABS_DEATH_INTERVAL = 2.0
 ALL_PELLETS_INTERVAL = 1.0
 PACMAN_TEXTURE_SWITCH_INTERVAL = 0.1
 POWER_PELLET_BLINK_INTERVAL = 0.15
+FRUIT_INTERVAL = 9.0
