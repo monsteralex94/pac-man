@@ -65,8 +65,8 @@ def FRUIT_LEVEL_AND_POINTS(game_data):
     elif game_data["level"] < 7: return 3, 700
     elif game_data["level"] < 9: return 4, 1000
     elif game_data["level"] < 11: return 5, 2000
-    elif game_data["level"] < 13: return 6, 3000
-    else: return 7, 5000
+    elif game_data["level"] < 13: return 5, 3000
+    else: return 5, 5000
 
 
 FPS = 60
