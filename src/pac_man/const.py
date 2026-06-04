@@ -58,7 +58,7 @@ def SPEED(game_data, is_pacman, frightened=False):
         else: return speed
 
 
-def FRUIT_LEVEL_AND_POINTS(game_data):
+def FRUIT_TYPE_AND_POINTS(game_data):
     if game_data["level"] == 1: return 0, 100
     elif game_data["level"] == 2: return 1, 300
     elif game_data["level"] < 5: return 2, 500
