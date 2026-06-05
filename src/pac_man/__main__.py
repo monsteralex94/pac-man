@@ -59,14 +59,21 @@ else:
     highscore = 0
 
 # Daten während des Spiels
-game_data = {
-    "score": 0,
-    "level": 1,
-    "lives": 2,
-    "ghost_mode": const.GhostMode.SCATTER,
-    "ghost_mode_cycle": 1,
-    "frightened_ghosts_eaten": 0,
-}
+game_data = {}
+
+def reset_game_data():
+    global game_data
+
+    game_data = {
+        "score": 0,
+        "level": 1,
+        "lives": 2,
+        "ghost_mode": const.GhostMode.SCATTER,
+        "ghost_mode_cycle": 1,
+        "frightened_ghosts_eaten": 0,
+    }
+
+reset_game_data()
 
 phase_timer = const.READY_INTERVAL
 ghost_mode_timer = const.GHOST_MODE_INTERVAL(game_data)
@@ -201,15 +208,18 @@ def death_phase(dt):
 
 
 def abs_death_phase(dt):
-    global phase_timer, phase
+    global ghost_mode_timer, phase_timer, phase, game_data
 
     score_text = font.render(f"GAME OVER", True, (255, 0, 0))
     SCREEN.blit(score_text, score_text.get_rect(center=(WINWIDTHPX/2, 18*const.UNIT)))
 
     if phase_timer <= 0.0:
         reset_entity_sprites(dt)
-        game_data["lives"] -= 1
-        phase = const.Phase.EXIT
+        reset_game_data()
+        gamemap.load_pellets(MAPWIDTH, MAPHEIGHT, mapcontent, pellets_group, power_pellets_group)
+        ghost_mode_timer = const.GHOST_MODE_INTERVAL(game_data)
+        phase_timer = const.READY_INTERVAL
+        phase = const.Phase.READY
         return
     
     phase_timer -= dt
