@@ -3,7 +3,8 @@ import pygame
 from . import const
 from . import sprites
 
-def load_all(width, height, mapcontent, walls_group, pellets_group, power_pellets_group, fruits_group, crossing_rects):
+def load_all(width, height, mapcontent, walls_group, pellets_group, power_pellets_group,
+             fruits_group, powerups_group, crossing_rects):
     """Alle statischen Sprites aus dem Map-Inhalt laden"""
 
     for y in range(height):
@@ -23,6 +24,15 @@ def load_all(width, height, mapcontent, walls_group, pellets_group, power_pellet
                     pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
                 case 'o':
                     fruits_group.add(sprites.Fruit((x * const.UNIT, y * const.UNIT)))
+                case 'e':
+                    powerups_group.add(sprites.ExtraLife((x * const.UNIT, y * const.UNIT)))
+                    pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
+                case 'g':
+                    powerups_group.add(sprites.Gambler((x * const.UNIT, y * const.UNIT)))
+                    pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
+                case 's':
+                    powerups_group.add(sprites.ShadowDash((x * const.UNIT, y * const.UNIT)))
+                    pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
 
 
 def load_pellets(width, height, mapcontent, pellets_group, power_pellets_group):
@@ -31,8 +41,8 @@ def load_pellets(width, height, mapcontent, pellets_group, power_pellets_group):
     for y in range(height):
         for x in range(width):         
             match mapcontent[y][x]:
-                case '.': pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
-                case 'x': pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
+                case '.' | 'x' | 'e' | 'g' | 's':
+                    pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
                 case ':':
                     pp = sprites.PowerPellet((x * const.UNIT, y * const.UNIT))
                     pellets_group.add(pp)

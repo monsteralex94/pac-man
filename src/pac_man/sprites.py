@@ -1,6 +1,7 @@
 from . import const
 import pygame
 from typing import Optional
+from random import random
 from importlib.resources import files, as_file
 
 
@@ -196,6 +197,24 @@ class Pacman(EntitySprite):
         self.texture_timer = 0
         self.texture_num = 0
     
+    def shadow_dash(self, game_data, windowsize, walls_group):
+        new_rect = self.rect.move(dmap[self.try_direction][0] * 5*const.UNIT,
+                                  dmap[self.try_direction][1] * 5*const.UNIT)
+
+        if const.UNIT <= new_rect.left <= windowsize[0] - 3*const.UNIT and \
+                const.UNIT <= new_rect.top <= windowsize[1] - 3*const.UNIT:
+
+            for wall in walls_group:
+                if new_rect.colliderect(wall.rect):
+                    return
+
+            self.set_pos(new_rect.topleft)
+
+            game_data["shadow_dashes_left"] -= 1
+
+    def update_image(self):
+        self.image = self.frames[self.texture_num][self.curr_direction]
+    
     def update(self, **kwargs):
         ########### ANIMATION
         # Wenn der Timer überschritten wird, wechselt das Frame der Animation
@@ -205,12 +224,11 @@ class Pacman(EntitySprite):
             self.texture_num = int(not self.texture_num)
 
         # Auswählen der Textur innerhalb der Animation und Aktualisierung des Timers
-        self.image = self.frames[self.texture_num][self.curr_direction]
+        self.update_image()
         self.texture_timer += kwargs["dt"]
 
         ########### BEWEGUNG
-        if "move" not in kwargs or kwargs["move"]:
-            self.movement(const.SPEED(kwargs["game_data"], True), kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"])
+        self.movement(const.SPEED(kwargs["game_data"], True), kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"])
 
 
 class Ghost(EntitySprite):
@@ -532,3 +550,62 @@ class Fruit(pygame.sprite.Sprite):
 
         type, self.points = const.FRUIT_TYPE_AND_POINTS(kwargs["game_data"])
         self.image = self.frames[type]
+
+
+class PowerUp(pygame.sprite.Sprite):
+    def __init__(self, position: tuple[int, int], symbol: str, probability: float,
+                 from_level: int, to_level: int | float):
+        super().__init__()
+
+        with as_file(files("pac_man").joinpath(f"resources/powerups/{symbol}.png")) as path:
+            self.image = pygame.transform.scale(pygame.image.load(path), (2*const.UNIT, 2*const.UNIT))
+
+        self.image.set_alpha(0)
+        self.rect = self.image.get_rect(topleft=position)
+        self.active = False
+        self.timer = 0.0
+
+        self.probability = probability
+        self.from_level  = from_level
+        self.to_level    = to_level
+
+    def update(self, **kwargs):
+        if not (self.from_level <= kwargs["game_data"]["level"] <= self.to_level): return
+
+        if self.timer <= 0.0:
+            self.active = random() <= self.probability
+            self.timer = const.POWER_UP_INTERVAL
+
+        self.timer -= kwargs["dt"]
+        self.image.set_alpha(255 if self.active else 0)
+
+        if self.rect.colliderect(kwargs["pacman"].hitbox) and self.active:
+            self.when_hit(kwargs["game_data"])
+            self.active = False
+
+    def when_hit(self, game_data):
+        pass
+
+
+class ExtraLife(PowerUp):
+    def __init__(self, position: tuple[int, int]):
+        super().__init__(position, "extralife", 0.1, 1, 21)
+
+    def when_hit(self, game_data):
+        game_data["lives"] += 1
+
+
+class Gambler(PowerUp):
+    def __init__(self, position: tuple[int, int]):
+        super().__init__(position, "gambler", 0.2, 2, float('inf'))
+
+    def when_hit(self, game_data):
+        game_data["score"] += 3000 if random() <= 0.2 else -500
+
+
+class ShadowDash(PowerUp):
+    def __init__(self, position: tuple[int, int]):
+        super().__init__(position, "shadowdash", 0.2, 3, float('inf'))
+
+    def when_hit(self, game_data):
+        game_data["shadow_dashes_left"] += 1
