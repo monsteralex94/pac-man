@@ -678,9 +678,9 @@ class ShadowDash(PowerUp):
         game_data["shadow_dashes_left"] += 1
 
 
-class Bullet(PowerUp):
+class Dart(PowerUp):
     def __init__(self, position: tuple[int, int]):
-        super().__init__(position, "bullet", 0.1, 4, float('inf'))
+        super().__init__(position, "dart", 0.1, 4, float('inf'))
 
     def when_hit(self, game_data):
-        game_data["bullets_left"] += 1
+        game_data["darts_left"] += 1

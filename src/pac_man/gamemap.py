@@ -34,7 +34,7 @@ def load_all(width, height, mapcontent, walls_group, pellets_group, power_pellet
                     powerups_group.add(sprites.ShadowDash((x * const.UNIT, y * const.UNIT)))
                     pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
                 case 'b':
-                    powerups_group.add(sprites.Bullet((x * const.UNIT, y * const.UNIT)))
+                    powerups_group.add(sprites.Dart((x * const.UNIT, y * const.UNIT)))
                     pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
 
 

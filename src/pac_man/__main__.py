@@ -52,8 +52,8 @@ with as_file(files("pac_man").joinpath(f"resources/powerups/extralife.png")) as 
 with as_file(files("pac_man").joinpath(f"resources/powerups/shadowdash.png")) as path:
     sd_texture = pygame.transform.scale(pygame.image.load(path), (const.UNIT*2, const.UNIT*2))
 
-with as_file(files("pac_man").joinpath(f"resources/powerups/bullet.png")) as path:
-    bullet_texture = pygame.transform.scale(pygame.image.load(path), (const.UNIT*2, const.UNIT*2))
+with as_file(files("pac_man").joinpath(f"resources/powerups/dart.png")) as path:
+    dart_texture = pygame.transform.scale(pygame.image.load(path), (const.UNIT*2, const.UNIT*2))
 
 # Fenster erstellen
 SCREEN = pygame.display.set_mode((WINWIDTHPX, WINHEIGHTPX))
@@ -81,7 +81,7 @@ def reset_game_data():
         "ghost_mode_cycle": 1,
         "frightened_ghosts_eaten": 0,
         "shadow_dashes_left": 0,
-        "bullets_left": 0,
+        "darts_left": 0,
     }
 
 reset_game_data()
@@ -288,7 +288,7 @@ while game_data["phase"] != const.Phase.EXIT:
                     if game_data["shadow_dashes_left"] > 0 and game_data["phase"] == const.Phase.NORMAL:
                         pacman.shadow_dash(game_data, (WINWIDTHPX, WINHEIGHTPX), walls_group)
                 case pygame.K_x:
-                    if game_data["bullets_left"] > 0 and game_data["phase"] == const.Phase.NORMAL:
+                    if game_data["darts_left"] > 0 and game_data["phase"] == const.Phase.NORMAL:
                         pacman.shoot(game_data, ghosts_group)
                         pacman_gun.shooting = True
                         pacman_gun.timer = const.SHOOT_INTERVAL
@@ -319,8 +319,8 @@ while game_data["phase"] != const.Phase.EXIT:
         SCREEN.blit(sd_texture, pygame.Rect((i + 10) * const.UNIT*2, (WINHEIGHT-4)*const.UNIT, const.UNIT*2, const.UNIT*2))
 
     # Pac-Mans übrige Kugeln
-    for i in range(game_data["bullets_left"]):
-        SCREEN.blit(bullet_texture, pygame.Rect((i + 10) * const.UNIT*2, (WINHEIGHT-2)*const.UNIT, const.UNIT*2, const.UNIT*2))
+    for i in range(game_data["darts_left"]):
+        SCREEN.blit(dart_texture, pygame.Rect((i + 10) * const.UNIT*2, (WINHEIGHT-2)*const.UNIT, const.UNIT*2, const.UNIT*2))
 
     # Aktuelle Punktzahl, Highscore und Level
     score_text = font.render("SCORE", True, (255, 255, 255))
