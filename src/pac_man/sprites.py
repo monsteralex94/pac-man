@@ -211,6 +211,27 @@ class Pacman(EntitySprite):
             self.set_pos(new_rect.topleft)
 
             game_data["shadow_dashes_left"] -= 1
+    
+    def shoot(self, game_data, ghosts_group):
+        match self.try_direction:
+            case 'r':
+                for ghost in ghosts_group:
+                    if ghost.rect.x > self.rect.x and ghost.rect.y == self.rect.y:
+                        ghost.reset()
+            case 'l':
+                for ghost in ghosts_group:
+                    if ghost.rect.x < self.rect.x and ghost.rect.y == self.rect.y:
+                        ghost.reset()
+            case 'u':
+                for ghost in ghosts_group:
+                    if ghost.rect.y < self.rect.y and ghost.rect.x == self.rect.x:
+                        ghost.reset()
+            case 'd':
+                for ghost in ghosts_group:
+                    if ghost.rect.y > self.rect.y and ghost.rect.x == self.rect.x:
+                        ghost.reset()
+
+        game_data["bullets_left"] -= 1
 
     def update_image(self):
         self.image = self.frames[self.texture_num][self.curr_direction]
@@ -278,7 +299,7 @@ class Ghost(EntitySprite):
         
         self.frightened_timer += kwargs_dict["dt"]
     
-    def reset_frightened(self):
+    def reset(self):
         self.set_pos(const.GHOST3_START_POS)
         self.is_frightened = False
         self.start = True
@@ -475,11 +496,57 @@ class PacmanDirection(pygame.sprite.Sprite):
         self.frames = {d: pygame.transform.rotate(frame, angle) for d, angle in rotations.items()}
 
         self.image = self.frames['r']
+        self.image.set_alpha(0)
         self.rect = self.image.get_rect()
     
     def update(self, **kwargs) -> None:
         """Passt sich Pac-Mans Position und gewünschter Richtung an"""
         self.image = self.frames[kwargs["pacman"].try_direction]
+        self.image.set_alpha(255 if kwargs["game_data"]["phase"] == const.Phase.NORMAL else 0)
+        self.rect.center = kwargs["pacman"].rect.center
+
+
+class PacmanGun(pygame.sprite.Sprite):
+    "Klasse für Pacmans Pistole"
+
+    def __init__(self) -> None:
+        super().__init__()
+
+        with as_file(files("pac_man").joinpath(f"resources/pacman/gun0.png")) as path:
+            orig_img_0 = pygame.transform.scale(pygame.image.load(path), (const.UNIT*4, const.UNIT*4))
+
+        with as_file(files("pac_man").joinpath(f"resources/pacman/gun1.png")) as path:
+            orig_img_1 = pygame.transform.scale(pygame.image.load(path), (const.UNIT*4, const.UNIT*4))
+
+        self.frames = [
+            {
+                'r': img,
+                'u': pygame.transform.rotate(img, 90),
+                'l': pygame.transform.flip(img, True, False),
+                'd': pygame.transform.flip(pygame.transform.rotate(img, 270), True, False)
+            }
+            for img in (orig_img_0, orig_img_1)
+        ]
+        
+        self.image = self.frames[0]['r']
+        self.image.set_alpha(0)
+        self.rect = self.image.get_rect()
+
+        self.shooting = False
+        self.timer = 0.0
+    
+    def update(self, **kwargs) -> None:
+        """Passt sich Pac-Mans Position und gewünschter Richtung an"""
+        if self.shooting and self.timer <= 0: self.shooting = False
+        else: self.timer -= kwargs["dt"]
+
+        self.image = self.frames[int(self.shooting)][kwargs["pacman"].try_direction]
+        self.image.set_alpha(255 
+            if (kwargs["game_data"]["phase"] == const.Phase.NORMAL
+                and kwargs["game_data"]["bullets_left"] > 0
+                and not self.shooting)
+            else 0)
+
         self.rect.center = kwargs["pacman"].rect.center
 
 
@@ -609,3 +676,11 @@ class ShadowDash(PowerUp):
 
     def when_hit(self, game_data):
         game_data["shadow_dashes_left"] += 1
+
+
+class Bullet(PowerUp):
+    def __init__(self, position: tuple[int, int]):
+        super().__init__(position, "bullet", 0.1, 4, float('inf'))
+
+    def when_hit(self, game_data):
+        game_data["bullets_left"] += 1

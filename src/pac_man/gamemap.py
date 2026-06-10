@@ -33,6 +33,9 @@ def load_all(width, height, mapcontent, walls_group, pellets_group, power_pellet
                 case 's':
                     powerups_group.add(sprites.ShadowDash((x * const.UNIT, y * const.UNIT)))
                     pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
+                case 'b':
+                    powerups_group.add(sprites.Bullet((x * const.UNIT, y * const.UNIT)))
+                    pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
 
 
 def load_pellets(width, height, mapcontent, pellets_group, power_pellets_group):
@@ -41,7 +44,7 @@ def load_pellets(width, height, mapcontent, pellets_group, power_pellets_group):
     for y in range(height):
         for x in range(width):         
             match mapcontent[y][x]:
-                case '.' | 'x' | 'e' | 'g' | 's':
+                case '.' | 'x' | 'e' | 'g' | 's' | 'b':
                     pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
                 case ':':
                     pp = sprites.PowerPellet((x * const.UNIT, y * const.UNIT))
