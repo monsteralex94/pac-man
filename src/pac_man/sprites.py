@@ -231,7 +231,7 @@ class Pacman(EntitySprite):
                     if ghost.rect.y > self.rect.y and ghost.rect.x == self.rect.x:
                         ghost.reset()
 
-        game_data["bullets_left"] -= 1
+        game_data["darts_left"] -= 1
 
     def update_image(self):
         self.image = self.frames[self.texture_num][self.curr_direction]
@@ -543,7 +543,7 @@ class PacmanGun(pygame.sprite.Sprite):
         self.image = self.frames[int(self.shooting)][kwargs["pacman"].try_direction]
         self.image.set_alpha(255 
             if (kwargs["game_data"]["phase"] == const.Phase.NORMAL
-                and kwargs["game_data"]["bullets_left"] > 0
+                and kwargs["game_data"]["darts_left"] > 0
                 and not self.shooting)
             else 0)
 
