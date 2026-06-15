@@ -1,4 +1,4 @@
-from . import const
+from .const import *
 from . import sprites
 from . import gamemap
 
@@ -8,7 +8,7 @@ import pygame
 pygame.init()
 pygame.font.init()
 
-font = pygame.font.SysFont("Liberation Mono", int(const.UNIT*1.5))
+font = pygame.font.SysFont("Liberation Mono", int(UNIT*1.5))
 
 # Map auslesen
 mapcontent = files("pac_man").joinpath("resources/map.txt").read_text().split("\n")
@@ -16,7 +16,7 @@ mapcontent = files("pac_man").joinpath("resources/map.txt").read_text().split("\
 # Fenstergröße anhand der Größe der Map bestimmen (in Blöcken und Pixeln)
 MAPWIDTH,   MAPHEIGHT   = len(mapcontent[0]), len(mapcontent)
 WINWIDTH,   WINHEIGHT   = MAPWIDTH, MAPHEIGHT + 6
-WINWIDTHPX, WINHEIGHTPX = WINWIDTH * const.UNIT, WINHEIGHT * const.UNIT
+WINWIDTHPX, WINHEIGHTPX = WINWIDTH * UNIT, WINHEIGHT * UNIT
 
 # Statische Sprites und Rects der Kreuzungen aus dem Map-Inhalt laden
 walls_group = pygame.sprite.Group()
@@ -32,36 +32,36 @@ gamemap.load_all(MAPWIDTH, MAPHEIGHT, mapcontent, walls_group, pellets_group,
 # Bewegliche Sprites laden
 entities_group = pygame.sprite.Group()
 
-pacman = sprites.Pacman(const.PACMAN_START_POS)
+pacman = sprites.Pacman(PACMAN_START_POS)
 pacman_direction = sprites.PacmanDirection()  # Pfeil, der die ausgewählte Richtung für Pacman anzeigt
 pacman_gun = sprites.PacmanGun()  # Pacmans Pistole, mit denen er Geister zum Regenerieren zwingt
 
 ghosts_group = pygame.sprite.Group()
-ghost1 = sprites.Ghost1(const.GHOST1_START_POS)
-ghost2 = sprites.Ghost2(const.GHOST2_START_POS)
-ghost3 = sprites.Ghost3(const.GHOST3_START_POS)
-ghost4 = sprites.Ghost4(const.GHOST4_START_POS)
-ghosts_group.add(ghost1, ghost2, ghost3, ghost4)
+ghost1 = sprites.Ghost1(GHOST1_START_POS, (WINWIDTHPX, 0))
+ghost2 = sprites.Ghost2(GHOST2_START_POS, (0, 0))
+ghost3 = sprites.Ghost3(GHOST3_START_POS, (WINWIDTHPX, WINHEIGHTPX))
+ghost4 = sprites.Ghost4(GHOST4_START_POS, (0, WINHEIGHTPX))
 
+ghosts_group.add(ghost1, ghost2, ghost3, ghost4)
 entities_group.add(pacman, pacman_direction, pacman_gun, ghost1, ghost2, ghost3, ghost4)
 
 # Textur für Pac-Mans Leben / Shadow Dashes / Kugeln
 with as_file(files("pac_man").joinpath(f"resources/powerups/extralife.png")) as path:
-    life_texture = pygame.transform.scale(pygame.image.load(path), (const.UNIT*2, const.UNIT*2))
+    life_texture = pygame.transform.scale(pygame.image.load(path), (UNIT*2, UNIT*2))
 
 with as_file(files("pac_man").joinpath(f"resources/powerups/shadowdash.png")) as path:
-    sd_texture = pygame.transform.scale(pygame.image.load(path), (const.UNIT*2, const.UNIT*2))
+    sd_texture = pygame.transform.scale(pygame.image.load(path), (UNIT*2, UNIT*2))
 
 with as_file(files("pac_man").joinpath(f"resources/powerups/dart.png")) as path:
-    dart_texture = pygame.transform.scale(pygame.image.load(path), (const.UNIT*2, const.UNIT*2))
+    dart_texture = pygame.transform.scale(pygame.image.load(path), (UNIT*2, UNIT*2))
 
 # Fenster erstellen
 SCREEN = pygame.display.set_mode((WINWIDTHPX, WINHEIGHTPX))
 pygame.display.set_caption("Pac-Man")
 
 # Highscore auslesen
-if const.HIGHSCORE_PATH.exists():
-    with open(const.HIGHSCORE_PATH) as file:
+if HIGHSCORE_PATH.exists():
+    with open(HIGHSCORE_PATH) as file:
         highscore = int(file.read())
 else:
     highscore = float('-inf')
@@ -73,11 +73,11 @@ def reset_game_data():
     global game_data
 
     game_data = {
-        "phase": const.Phase.READY,
+        "phase": Phase.READY,
         "score": 0,
         "level": 1,
         "lives": 3,
-        "ghost_mode": const.GhostMode.SCATTER,
+        "ghost_mode": GhostMode.SCATTER,
         "ghost_mode_cycle": 1,
         "frightened_ghosts_eaten": 0,
         "shadow_dashes_left": 0,
@@ -86,26 +86,26 @@ def reset_game_data():
 
 reset_game_data()
 
-phase_timer = const.READY_INTERVAL
-ghost_mode_timer = const.GHOST_MODE_INTERVAL(game_data)
+phase_timer = READY_INTERVAL
+ghost_mode_timer = GHOST_MODE_INTERVAL(game_data)
 
 # Main-Loop
 clock = pygame.time.Clock()
 
 def reset_entity_sprites():
-    ghost1.set_pos(const.GHOST1_START_POS)
-    ghost2.set_pos(const.GHOST2_START_POS)
-    ghost3.set_pos(const.GHOST3_START_POS)
-    ghost4.set_pos(const.GHOST4_START_POS)
+    ghost1.set_pos(GHOST1_START_POS)
+    ghost2.set_pos(GHOST2_START_POS)
+    ghost3.set_pos(GHOST3_START_POS)
+    ghost4.set_pos(GHOST4_START_POS)
 
     ghost1.try_direction = 'r'
     ghost2.start, ghost3.start, ghost4.start = True, True, True
 
     for ghost in ghosts_group:
-        ghost.is_frightened = False
+        ghost.fright_stage = GhostFrightStage.LEAVING_ARENA
         ghost.update_image(pacman.rect.center[0])
 
-    pacman.set_pos(const.PACMAN_START_POS)
+    pacman.set_pos(PACMAN_START_POS)
     pacman.try_direction = 'l'
     pacman.curr_direction = 'l'
     pacman.texture_num = 1
@@ -128,20 +128,20 @@ def normal_phase(dt):
 
     # Pellets neu laden, wenn alle gegessen wurden
     if len(pellets_group) == 0:
-        phase_timer = const.ALL_PELLETS_INTERVAL
-        game_data["phase"] = const.Phase.ALL_PELLETS
+        phase_timer = ALL_PELLETS_INTERVAL
+        game_data["phase"] = Phase.ALL_PELLETS
     
     for power_pellet in power_pellets_group:
         if pacman.hitbox.colliderect(power_pellet.rect):
             for ghost in ghosts_group:
-                ghost.is_frightened = True
+                ghost.fright_stage = GhostFrightStage.FRIGHTENED
                 ghost.frightened_timer = 0.0
             game_data["frightened_ghosts_eaten"] = 0
     
     for fruit in fruits_group:
         if len(pellets_group) in (188, 88):
             fruit.active = True
-            fruit.timer = const.FRUIT_INTERVAL
+            fruit.timer = FRUIT_INTERVAL
         
         if pacman.hitbox.colliderect(fruit.rect) and fruit.active:
             game_data["score"] += fruit.points
@@ -149,26 +149,26 @@ def normal_phase(dt):
     
     for ghost in ghosts_group:
         if pacman.hitbox.colliderect(ghost.hitbox):
-            if ghost.is_frightened:
+            if ghost.fright_stage == GhostFrightStage.FRIGHTENED:
                 game_data["frightened_ghosts_eaten"] += 1
                 game_data["score"] += 100 * 2 ** game_data["frightened_ghosts_eaten"]
                 ghost.reset()
             else:
                 if game_data["lives"] > 0:
-                    phase_timer = const.DEATH_INTERVAL
-                    game_data["phase"] = const.Phase.DEATH
+                    phase_timer = DEATH_INTERVAL
+                    game_data["phase"] = Phase.DEATH
                 else:
                     if game_data["score"] > highscore:
                         highscore = game_data["score"]
-                        with open(const.HIGHSCORE_PATH, "w") as file:
+                        with open(HIGHSCORE_PATH, "w") as file:
                             file.write(str(highscore))
 
-                    phase_timer = const.ABS_DEATH_INTERVAL
-                    game_data["phase"] = const.Phase.ABS_DEATH
+                    phase_timer = ABS_DEATH_INTERVAL
+                    game_data["phase"] = Phase.ABS_DEATH
     
     no_frightened = True
     for ghost in ghosts_group:
-        if ghost.is_frightened:
+        if ghost.fright_stage == GhostFrightStage.FRIGHTENED:
             no_frightened = False
             break
     if no_frightened:
@@ -176,13 +176,13 @@ def normal_phase(dt):
     
     if ghost_mode_timer <= 0.0:
         match game_data["ghost_mode"]:
-            case const.GhostMode.SCATTER:
-                game_data["ghost_mode"] = const.GhostMode.CHASE
-            case const.GhostMode.CHASE:
-                game_data["ghost_mode"] = const.GhostMode.SCATTER
+            case GhostMode.SCATTER:
+                game_data["ghost_mode"] = GhostMode.CHASE
+            case GhostMode.CHASE:
+                game_data["ghost_mode"] = GhostMode.SCATTER
                 game_data["ghost_mode_cycle"] += 1
         
-        ghost_mode_timer = const.GHOST_MODE_INTERVAL(game_data)
+        ghost_mode_timer = GHOST_MODE_INTERVAL(game_data)
 
     ghost_mode_timer -= dt
    
@@ -204,10 +204,10 @@ def ready_phase(dt):
     global phase_timer
 
     score_text = font.render(f"READY!", True, (255, 255, 0))
-    SCREEN.blit(score_text, score_text.get_rect(center=(WINWIDTHPX/2, 18*const.UNIT)))
+    SCREEN.blit(score_text, score_text.get_rect(center=(WINWIDTHPX/2, 18*UNIT)))
 
     if phase_timer <= 0.0:
-        game_data["phase"] = const.Phase.NORMAL
+        game_data["phase"] = Phase.NORMAL
         return
 
     phase_timer -= dt
@@ -220,10 +220,10 @@ def death_phase(dt):
         reset_entity_sprites()
         game_data["lives"] -= 1
         for ghost in ghosts_group:
-            ghost.is_frightened = False
+            ghost.fright_stage = GhostFrightStage.LEAVING_ARENA
             ghost.update_image(pacman.rect.center[0])
-        phase_timer = const.READY_INTERVAL
-        game_data["phase"] = const.Phase.READY
+        phase_timer = READY_INTERVAL
+        game_data["phase"] = Phase.READY
         return
     
     phase_timer -= dt
@@ -233,16 +233,16 @@ def abs_death_phase(dt):
     global ghost_mode_timer, phase_timer, game_data
 
     score_text = font.render(f"GAME OVER", True, (255, 0, 0))
-    SCREEN.blit(score_text, score_text.get_rect(center=(WINWIDTHPX/2, 18*const.UNIT)))
+    SCREEN.blit(score_text, score_text.get_rect(center=(WINWIDTHPX/2, 18*UNIT)))
 
     if phase_timer <= 0.0:
         reset_game_data()
         reset_entity_sprites()
         reset_powerups_and_fruits()
         gamemap.load_pellets(MAPWIDTH, MAPHEIGHT, mapcontent, pellets_group, power_pellets_group)
-        ghost_mode_timer = const.GHOST_MODE_INTERVAL(game_data)
-        phase_timer = const.READY_INTERVAL
-        game_data["phase"] = const.Phase.READY
+        ghost_mode_timer = GHOST_MODE_INTERVAL(game_data)
+        phase_timer = READY_INTERVAL
+        game_data["phase"] = Phase.READY
         return
     
     phase_timer -= dt
@@ -253,25 +253,25 @@ def all_pellets_phase(dt):
 
     if phase_timer <= 0.0:
         game_data["level"] += 1
-        game_data["ghost_mode"] = const.GhostMode.SCATTER
+        game_data["ghost_mode"] = GhostMode.SCATTER
         game_data["ghost_mode_cycle"] = 1
         reset_entity_sprites()
         gamemap.load_pellets(MAPWIDTH, MAPHEIGHT, mapcontent, pellets_group, power_pellets_group)
-        phase_timer = const.READY_INTERVAL
-        game_data["phase"] = const.Phase.READY
+        phase_timer = READY_INTERVAL
+        game_data["phase"] = Phase.READY
         return
 
     phase_timer -= dt
 
 
-while game_data["phase"] != const.Phase.EXIT:
+while game_data["phase"] != Phase.EXIT:
     # Zeitlicher Abstand zwischen Frames
     dt = clock.tick(60) / 1000.0
 
     for event in pygame.event.get():
         # Spiel beenden
         if event.type == pygame.QUIT:
-            game_data["phase"] = const.Phase.EXIT
+            game_data["phase"] = Phase.EXIT
         
         # Tasteneingabe des Benutzers lesen
         if event.type == pygame.KEYDOWN:
@@ -285,23 +285,23 @@ while game_data["phase"] != const.Phase.EXIT:
                 case pygame.K_DOWN:
                     pacman.try_direction = 'd'
                 case pygame.K_c:
-                    if game_data["shadow_dashes_left"] > 0 and game_data["phase"] == const.Phase.NORMAL:
+                    if game_data["shadow_dashes_left"] > 0 and game_data["phase"] == Phase.NORMAL:
                         pacman.shadow_dash(game_data, (WINWIDTHPX, WINHEIGHTPX), walls_group)
                 case pygame.K_x:
-                    if game_data["darts_left"] > 0 and game_data["phase"] == const.Phase.NORMAL:
+                    if game_data["darts_left"] > 0 and game_data["phase"] == Phase.NORMAL:
                         pacman.shoot(game_data, ghosts_group)
                         pacman_gun.shooting = True
-                        pacman_gun.timer = const.SHOOT_INTERVAL
+                        pacman_gun.timer = SHOOT_INTERVAL
 
     # Schwarzer Hintergrund
     SCREEN.fill((0, 0, 0))
 
     match game_data["phase"]:
-        case const.Phase.NORMAL: normal_phase(dt)
-        case const.Phase.READY: ready_phase(dt)
-        case const.Phase.DEATH: death_phase(dt)
-        case const.Phase.ABS_DEATH: abs_death_phase(dt)
-        case const.Phase.ALL_PELLETS: all_pellets_phase(dt)
+        case Phase.NORMAL: normal_phase(dt)
+        case Phase.READY: ready_phase(dt)
+        case Phase.DEATH: death_phase(dt)
+        case Phase.ABS_DEATH: abs_death_phase(dt)
+        case Phase.ALL_PELLETS: all_pellets_phase(dt)
     
     # Alle Sprites zeichnen
     walls_group.draw(SCREEN)
@@ -311,34 +311,37 @@ while game_data["phase"] != const.Phase.EXIT:
     entities_group.draw(SCREEN)
 
     # Pac-Mans Leben
-    for i in range(game_data["lives"]):
-        SCREEN.blit(life_texture, pygame.Rect((i + 10) * const.UNIT*2, (WINHEIGHT-6)*const.UNIT, const.UNIT*2, const.UNIT*2))
+    SCREEN.blit(life_texture, pygame.Rect(11 * UNIT*2, (WINHEIGHT-6)*UNIT, UNIT*2, UNIT*2))
+    lives_num = font.render(str(game_data["lives"]), True, (255, 255, 255))
+    SCREEN.blit(lives_num, lives_num.get_rect(topleft=(25 * UNIT, (WINHEIGHT-6)*UNIT)))
     
     # Pac-Mans übrige Shadow Dashes
-    for i in range(game_data["shadow_dashes_left"]):
-        SCREEN.blit(sd_texture, pygame.Rect((i + 10) * const.UNIT*2, (WINHEIGHT-4)*const.UNIT, const.UNIT*2, const.UNIT*2))
+    SCREEN.blit(sd_texture, pygame.Rect(11 * UNIT*2, (WINHEIGHT-4)*UNIT, UNIT*2, UNIT*2))
+    sd_num = font.render(str(game_data["shadow_dashes_left"]), True, (255, 255, 255))
+    SCREEN.blit(sd_num, sd_num.get_rect(topleft=(25 * UNIT, (WINHEIGHT-4)*UNIT)))
 
     # Pac-Mans übrige Kugeln
-    for i in range(game_data["darts_left"]):
-        SCREEN.blit(dart_texture, pygame.Rect((i + 10) * const.UNIT*2, (WINHEIGHT-2)*const.UNIT, const.UNIT*2, const.UNIT*2))
+    SCREEN.blit(dart_texture, pygame.Rect(11 * UNIT*2, (WINHEIGHT-2)*UNIT, UNIT*2, UNIT*2))
+    darts_num = font.render(str(game_data["darts_left"]), True, (255, 255, 255))
+    SCREEN.blit(darts_num, darts_num.get_rect(topleft=(25 * UNIT, (WINHEIGHT-2)*UNIT)))
 
     # Aktuelle Punktzahl, Highscore und Level
     score_text = font.render("SCORE", True, (255, 255, 255))
-    SCREEN.blit(score_text, score_text.get_rect(topleft=(WINWIDTHPX*0.01, (WINHEIGHT-5)*const.UNIT)))
+    SCREEN.blit(score_text, score_text.get_rect(topleft=(WINWIDTHPX*0.01, (WINHEIGHT-5)*UNIT)))
 
     score_num = font.render(str(game_data["score"]), True, (255, 255, 255))
-    SCREEN.blit(score_num, score_num.get_rect(topleft=(WINWIDTHPX*0.01, (WINHEIGHT-3)*const.UNIT)))
+    SCREEN.blit(score_num, score_num.get_rect(topleft=(WINWIDTHPX*0.01, (WINHEIGHT-3)*UNIT)))
 
     highscore_text = font.render("HIGHSCORE", True, (255, 255, 255))
-    SCREEN.blit(highscore_text, highscore_text.get_rect(topleft=(WINWIDTHPX*0.2, (WINHEIGHT-5)*const.UNIT)))
+    SCREEN.blit(highscore_text, highscore_text.get_rect(topleft=(WINWIDTHPX*0.2, (WINHEIGHT-5)*UNIT)))
 
     highscore_num = font.render(str(highscore) if highscore != float('inf') else '-', True, (255, 255, 255))
-    SCREEN.blit(highscore_num, highscore_num.get_rect(topleft=(WINWIDTHPX*0.2, (WINHEIGHT-3)*const.UNIT)))
+    SCREEN.blit(highscore_num, highscore_num.get_rect(topleft=(WINWIDTHPX*0.2, (WINHEIGHT-3)*UNIT)))
 
     level_text = font.render("LEVEL", True, (255, 255, 255))
-    SCREEN.blit(level_text, level_text.get_rect(topleft=(WINWIDTHPX*0.5, (WINHEIGHT-5)*const.UNIT)))
+    SCREEN.blit(level_text, level_text.get_rect(topleft=(WINWIDTHPX*0.5, (WINHEIGHT-5)*UNIT)))
 
     level_num = font.render(str(game_data['level']), True, (255, 255, 255))
-    SCREEN.blit(level_num, level_num.get_rect(topleft=(WINWIDTHPX*0.5, (WINHEIGHT-3)*const.UNIT)))
+    SCREEN.blit(level_num, level_num.get_rect(topleft=(WINWIDTHPX*0.5, (WINHEIGHT-3)*UNIT)))
 
     pygame.display.flip()

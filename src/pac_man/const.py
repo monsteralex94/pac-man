@@ -13,6 +13,12 @@ class GhostMode(IntEnum):
     SCATTER = 1
     CHASE = 2
 
+class GhostFrightStage(IntEnum):
+    UNFRIGHTENED = 0
+    FRIGHTENED = 1
+    TIMEOUT = 2
+    LEAVING_ARENA = 3
+
 
 def GHOST_MODE_INTERVAL(game_data):
     match game_data["ghost_mode"]:
@@ -39,7 +45,7 @@ def GHOST_FRIGHTENED_INTERVAL(game_data):
     else: return 0.0
 
 
-def SPEED(game_data, is_pacman, frightened=False):
+def SPEED(game_data, is_pacman, fright_stage=0):
     speed = UNIT * 12
 
     if is_pacman:
@@ -54,8 +60,12 @@ def SPEED(game_data, is_pacman, frightened=False):
         elif game_data["level"] < 21: speed *= 0.95
         else: speed *= 0.95
 
-        if frightened: return speed * 0.6
-        else: return speed
+        match fright_stage:
+            case GhostFrightStage.UNFRIGHTENED:  return speed
+            case GhostFrightStage.FRIGHTENED:    return speed * 0.6
+            case GhostFrightStage.TIMEOUT:       return 0.0
+            case GhostFrightStage.LEAVING_ARENA: return speed
+            case _: return 0.0
 
 
 def FRUIT_TYPE_AND_POINTS(game_data):
@@ -91,3 +101,5 @@ POWER_PELLET_BLINK_INTERVAL = 0.15
 FRUIT_INTERVAL = 9.0
 POWER_UP_INTERVAL = 6.0
 SHOOT_INTERVAL = 0.1
+GHOST_TIMEOUT_INTERVAL = 1.5
+GHOST_LEAVING_ARENA_INTERVAL = 0.5

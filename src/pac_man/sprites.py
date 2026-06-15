@@ -1,4 +1,4 @@
-from . import const
+from .const import *
 import pygame
 from typing import Optional
 from random import random
@@ -56,7 +56,7 @@ class Wall(StaticSprite):
     """Klasse für Wände"""
 
     def __init__(self, position: tuple[int, int], ghost: bool=False) -> None:
-        super().__init__(position, "walls/1" if ghost else "walls/0", (const.UNIT, const.UNIT), 0)
+        super().__init__(position, "walls/1" if ghost else "walls/0", (UNIT, UNIT), 0)
         self.ghost = ghost
 
 
@@ -67,13 +67,13 @@ class EntitySprite(pygame.sprite.Sprite):
         super().__init__()
 
         # Aktuelles Frame
-        self.image = pygame.Surface((const.UNIT * 2, const.UNIT * 2))
+        self.image = pygame.Surface((UNIT * 2, UNIT * 2))
 
         # Rect (Position und Größe) des Sprites als Ganzzahlen für das Zeichnen auf den Bildschirm
         self.rect = self.image.get_rect(topleft=start_position)
         self.hitbox = self.image.get_rect(topleft=start_position)
 
-        self.hitbox.width, self.hitbox.height = const.UNIT, const.UNIT
+        self.hitbox.width, self.hitbox.height = UNIT, UNIT
 
         # Tatsächliche Position des Sprites als Gleitkommazahlen (linke obere Ecke)
         self.float_pos = pygame.Vector2(start_position)
@@ -179,8 +179,8 @@ class Pacman(EntitySprite):
         # Frames für die Animation
         with as_file(files("pac_man").joinpath(f"resources/pacman/0.png")) as path0:
             with as_file(files("pac_man").joinpath(f"resources/pacman/1.png")) as path1:
-                frame0 = pygame.transform.scale(pygame.image.load(path0), (const.UNIT*2, const.UNIT*2))
-                frame1 = pygame.transform.scale(pygame.image.load(path1), (const.UNIT*2, const.UNIT*2))
+                frame0 = pygame.transform.scale(pygame.image.load(path0), (UNIT*2, UNIT*2))
+                frame1 = pygame.transform.scale(pygame.image.load(path1), (UNIT*2, UNIT*2))
 
         # Rotationswinkel in Grad für jede Richtung
         rotations = {'r': 0, 'u': 90, 'l': 180, 'd': 270}
@@ -198,11 +198,11 @@ class Pacman(EntitySprite):
         self.texture_num = 0
     
     def shadow_dash(self, game_data, windowsize, walls_group):
-        new_rect = self.rect.move(dmap[self.try_direction][0] * 5*const.UNIT,
-                                  dmap[self.try_direction][1] * 5*const.UNIT)
+        new_rect = self.rect.move(dmap[self.try_direction][0] * 5*UNIT,
+                                  dmap[self.try_direction][1] * 5*UNIT)
 
-        if const.UNIT <= new_rect.left <= windowsize[0] - 3*const.UNIT and \
-                const.UNIT <= new_rect.top <= windowsize[1] - 3*const.UNIT:
+        if UNIT <= new_rect.left <= windowsize[0] - 3*UNIT and \
+                UNIT <= new_rect.top <= windowsize[1] - 3*UNIT:
 
             for wall in walls_group:
                 if new_rect.colliderect(wall.rect):
@@ -240,7 +240,7 @@ class Pacman(EntitySprite):
         ########### ANIMATION
         # Wenn der Timer überschritten wird, wechselt das Frame der Animation
         # und der Timer wird zurückgesetzt
-        if self.texture_timer > const.PACMAN_TEXTURE_SWITCH_INTERVAL:
+        if self.texture_timer > PACMAN_TEXTURE_SWITCH_INTERVAL:
             self.texture_timer = 0
             self.texture_num = int(not self.texture_num)
 
@@ -249,27 +249,27 @@ class Pacman(EntitySprite):
         self.texture_timer += kwargs["dt"]
 
         ########### BEWEGUNG
-        self.movement(const.SPEED(kwargs["game_data"], True), kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"])
+        self.movement(SPEED(kwargs["game_data"], True), kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"])
 
 
 class Ghost(EntitySprite):
     "Klasse für Geist"
 
-    def __init__(self, start_position) -> None:
+    def __init__(self, start_position, edge) -> None:
         super().__init__(start_position)
 
-        self.is_frightened = False
+        self.fright_stage = GhostFrightStage.LEAVING_ARENA
         self.frightened_timer = 0.0
-        self.start = True
+        self.edge = edge
 
         self.frames = (())
     
     def load_frames(self, color):
         with as_file(files("pac_man").joinpath(f"resources/ghosts/{color}.png")) as path:
-            orig_image = pygame.transform.scale(pygame.image.load(path), (const.UNIT*2, const.UNIT*2))
+            orig_image = pygame.transform.scale(pygame.image.load(path), (UNIT*2, UNIT*2))
         
         with as_file(files("pac_man").joinpath(f"resources/ghosts/frightened.png")) as path:
-            image_frightened = pygame.transform.scale(pygame.image.load(path), (const.UNIT*2, const.UNIT*2))
+            image_frightened = pygame.transform.scale(pygame.image.load(path), (UNIT*2, UNIT*2))
         
         self.frames = (orig_image, pygame.transform.flip(orig_image, True, False)), \
             (image_frightened, image_frightened)
@@ -278,30 +278,31 @@ class Ghost(EntitySprite):
     
     def update_image(self, pacman_x):
         self.image = self.frames \
-            [int(self.is_frightened)] \
+            [int(self.fright_stage in (GhostFrightStage.FRIGHTENED, GhostFrightStage.TIMEOUT))] \
                 [int(self.rect.center[0] < pacman_x)]
-
-    def starting(self, kwargs_dict):
-        pos = self.rect.center
-        self.try_direction = 'u'
-
-        self.movement(const.SPEED(kwargs_dict["game_data"], False), kwargs_dict["windowsize"],
-                      kwargs_dict["walls_group"], kwargs_dict["dt"], True)
-
-        if self.rect.center == pos:
-            self.try_direction = 'l'
-            self.start = False
     
-    def run_frightened_timer(self, kwargs_dict):
-        if self.frightened_timer > const.GHOST_FRIGHTENED_INTERVAL(kwargs_dict["game_data"]):
+    def run_frightened_timer(self, **kwargs):
+        if self.fright_stage == GhostFrightStage.FRIGHTENED \
+                and self.frightened_timer > GHOST_FRIGHTENED_INTERVAL(kwargs["game_data"]):
             self.frightened_timer = 0.0
-            self.is_frightened = False
+            self.fright_stage = GhostFrightStage.UNFRIGHTENED
         
-        self.frightened_timer += kwargs_dict["dt"]
+        elif self.fright_stage == GhostFrightStage.TIMEOUT \
+                and self.frightened_timer > GHOST_TIMEOUT_INTERVAL:
+            self.frightened_timer = 0.0
+            self.fright_stage = GhostFrightStage.LEAVING_ARENA
+        elif self.fright_stage == GhostFrightStage.LEAVING_ARENA \
+                and self.frightened_timer > GHOST_LEAVING_ARENA_INTERVAL:
+            self.frightened_timer = 0.0
+            self.fright_stage = GhostFrightStage.UNFRIGHTENED
+            self.try_direction = 'r'
+
+        self.frightened_timer += kwargs["dt"]
     
     def reset(self):
-        self.set_pos(const.GHOST3_START_POS)
-        self.is_frightened = False
+        self.set_pos(GHOST3_START_POS)
+        self.fright_stage = GhostFrightStage.TIMEOUT
+        self.frightened_timer = 0.0
         self.start = True
         self.try_direction = 'u'
 
@@ -313,8 +314,8 @@ class Ghost(EntitySprite):
             if direction_let == opp_d[self.curr_direction]:
                 continue
 
-            new_x = self.rect.center[0] + direction_num[0] * (const.UNIT + 1)
-            new_y = self.rect.center[1] + direction_num[1] * (const.UNIT + 1)
+            new_x = self.rect.center[0] + direction_num[0] * (UNIT + 1)
+            new_y = self.rect.center[1] + direction_num[1] * (UNIT + 1)
 
             if collision_with_wall_point((new_x, new_y), walls_group, False):
                 continue
@@ -327,24 +328,58 @@ class Ghost(EntitySprite):
                 min_direction = direction_let
         
         self.try_direction = min_direction
+    
+    def direct_follow_crossing(self, follow_pos, crossing_rects, walls_group):
+        for crossing_rect in crossing_rects:
+            if self.rect == crossing_rect:
+                self.direct_follow(follow_pos, walls_group)
+    
+    def update(self, follow_pos, speed_add=0.0, **kwargs):
+        self.angry = kwargs["num_pellets"] <= GHOST1_SPEEDUP_PELLET_NUM
+        self.update_image(kwargs["pacman"].rect.center[0])
+
+        match self.fright_stage:
+            case GhostFrightStage.FRIGHTENED:
+                follow_pos = mirror_point(kwargs["pacman"].rect.center, self.rect.center)
+            
+            case GhostFrightStage.UNFRIGHTENED:
+                match kwargs["game_data"]["ghost_mode"]:
+                    case GhostMode.SCATTER:
+                        follow_pos = self.edge
+                    case GhostMode.CHASE:
+                        pass
+            
+            case GhostFrightStage.LEAVING_ARENA:
+                self.try_direction = 'u'
+        
+        if self.fright_stage in (GhostFrightStage.UNFRIGHTENED, GhostFrightStage.FRIGHTENED):
+            self.direct_follow_crossing(follow_pos, kwargs["crossing_rects"], kwargs["walls_group"])
+
+        if self.fright_stage != GhostFrightStage.UNFRIGHTENED:
+            self.run_frightened_timer(**kwargs)
+
+        if self.fright_stage != GhostFrightStage.TIMEOUT:
+            self.movement(SPEED(kwargs["game_data"], False, self.fright_stage) + speed_add,
+                          kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"],
+                          self.fright_stage == GhostFrightStage.LEAVING_ARENA)
 
 
 class Ghost1(Ghost):
-    def __init__(self, start_position) -> None:
-        super().__init__(start_position)
+    def __init__(self, start_position, edge) -> None:
+        super().__init__(start_position, edge)
         self.load_frames()
         self.angry = False
         self.try_direction = 'r'
     
     def load_frames(self):
         with as_file(files("pac_man").joinpath(f"resources/ghosts/red.png")) as path:
-            orig_image = pygame.transform.scale(pygame.image.load(path), (const.UNIT*2, const.UNIT*2))
+            orig_image = pygame.transform.scale(pygame.image.load(path), (UNIT*2, UNIT*2))
         
         with as_file(files("pac_man").joinpath(f"resources/ghosts/red_angry.png")) as path:
-            orig_image_angry = pygame.transform.scale(pygame.image.load(path), (const.UNIT*2, const.UNIT*2))
+            orig_image_angry = pygame.transform.scale(pygame.image.load(path), (UNIT*2, UNIT*2))
         
         with as_file(files("pac_man").joinpath(f"resources/ghosts/frightened.png")) as path:
-            image_frightened = pygame.transform.scale(pygame.image.load(path), (const.UNIT*2, const.UNIT*2))
+            image_frightened = pygame.transform.scale(pygame.image.load(path), (UNIT*2, UNIT*2))
         
         self.frames = ((orig_image, pygame.transform.flip(orig_image, True, False)), \
             (orig_image_angry, pygame.transform.flip(orig_image_angry, True, False))), \
@@ -353,134 +388,55 @@ class Ghost1(Ghost):
         self.image = self.frames[0][0][0]
     
     def update_image(self, pacman_x):
-        self.image = self.frames[int(self.is_frightened)][int(self.angry)][int(self.rect.center[0] < pacman_x)]
+        self.image = self.frames[int(self.fright_stage in (GhostFrightStage.FRIGHTENED, GhostFrightStage.TIMEOUT))] \
+            [int(self.angry)][int(self.rect.center[0] < pacman_x)]
  
     def update(self, **kwargs):
-        if self.start:
-            self.starting(kwargs)
-            return
-        
-        self.angry = kwargs["num_pellets"] <= const.GHOST1_SPEEDUP_PELLET_NUM
-        self.update_image(kwargs["pacman"].rect.center[0])
-
-        if self.is_frightened:
-            follow_pos = mirror_point(kwargs["pacman"].rect.center, self.rect.center)
-            self.run_frightened_timer(kwargs)
-        else:
-            match kwargs["game_data"]["ghost_mode"]:
-                case const.GhostMode.SCATTER:
-                    follow_pos = (kwargs["windowsize"][0], 0)
-                case const.GhostMode.CHASE:
-                    follow_pos = kwargs["pacman"].rect.center
-        
-        for crossing_rect in kwargs["crossing_rects"]:
-            if self.rect == crossing_rect:
-                self.direct_follow(follow_pos, kwargs["walls_group"])
-        
-        self.movement(const.SPEED(kwargs["game_data"], False, self.is_frightened) + (0.6 * const.UNIT if self.angry else 0.0),
-                      kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"])
+        return super().update(kwargs["pacman"].rect.center, 0.6 * UNIT if self.angry else 0.0, **kwargs)
 
 
 class Ghost2(Ghost):
-    def __init__(self, start_position) -> None:
-        super().__init__(start_position)
+    def __init__(self, start_position, edge) -> None:
+        super().__init__(start_position, edge)
         self.load_frames("pink")
  
     def update(self, **kwargs):
-        if self.start:
-            self.starting(kwargs)
-            return
+        follow_pos = kwargs["pacman"].rect.center[0] + dmap[kwargs["pacman"].try_direction][0] * UNIT * 4, \
+            kwargs["pacman"].rect.center[1] + dmap[kwargs["pacman"].try_direction][1] * UNIT * 4
 
-        self.update_image(kwargs["pacman"].rect.center[0])
-
-        if self.is_frightened:
-            follow_pos = mirror_point(kwargs["pacman"].rect.center, self.rect.center)
-            self.run_frightened_timer(kwargs)
-        else:
-            match kwargs["game_data"]["ghost_mode"]:
-                case const.GhostMode.SCATTER:
-                    follow_pos = (0, 0)
-                case const.GhostMode.CHASE:
-                    follow_pos = kwargs["pacman"].rect.center[0] + dmap[kwargs["pacman"].try_direction][0] * const.UNIT * 4, \
-                        kwargs["pacman"].rect.center[1] + dmap[kwargs["pacman"].try_direction][1] * const.UNIT * 4
-
-        for crossing_rect in kwargs["crossing_rects"]:
-            if self.rect == crossing_rect:
-                self.direct_follow(follow_pos, kwargs["walls_group"])
-
-        self.movement(const.SPEED(kwargs["game_data"], False, self.is_frightened), kwargs["windowsize"],
-                      kwargs["walls_group"], kwargs["dt"])
+        return super().update(follow_pos, **kwargs)
 
 
 class Ghost3(Ghost):
-    def __init__(self, start_position) -> None:
-        super().__init__(start_position)
+    def __init__(self, start_position, edge) -> None:
+        super().__init__(start_position, edge)
         self.load_frames("cyan")
  
     def update(self, **kwargs):
-        if self.start:
-            self.starting(kwargs)
-            return
+        follow_pos_1 = kwargs["ghost1"].rect.center
+        follow_pos_2 = kwargs["pacman"].rect.center[0] + dmap[kwargs["pacman"].try_direction][0] * UNIT * 2, \
+            kwargs["pacman"].rect.center[1] + dmap[kwargs["pacman"].try_direction][1] * UNIT * 2
 
-        self.update_image(kwargs["pacman"].rect.center[0])
+        follow_pos = 2 * follow_pos_2[0] - follow_pos_1[0], \
+            2 * follow_pos_2[1] - follow_pos_1[1]
 
-        if self.is_frightened:
-            follow_pos = mirror_point(kwargs["pacman"].rect.center, self.rect.center)
-            self.run_frightened_timer(kwargs)
-        else:
-            match kwargs["game_data"]["ghost_mode"]:
-                case const.GhostMode.SCATTER:
-                    follow_pos = kwargs["windowsize"]
-                case const.GhostMode.CHASE:
-                    follow_pos_1 = kwargs["ghost1"].rect.center
-                    follow_pos_2 = kwargs["pacman"].rect.center[0] + dmap[kwargs["pacman"].try_direction][0] * const.UNIT * 2, \
-                        kwargs["pacman"].rect.center[1] + dmap[kwargs["pacman"].try_direction][1] * const.UNIT * 2
-
-                    follow_pos = 2 * follow_pos_2[0] - follow_pos_1[0], \
-                        2 * follow_pos_2[1] - follow_pos_1[1]
-        
-        for crossing_rect in kwargs["crossing_rects"]:
-            if self.rect == crossing_rect:
-                self.direct_follow(follow_pos, kwargs["walls_group"])
-
-        self.movement(const.SPEED(kwargs["game_data"], False, self.is_frightened), kwargs["windowsize"],
-                      kwargs["walls_group"], kwargs["dt"])
+        return super().update(follow_pos, **kwargs)
 
 
 class Ghost4(Ghost):
-    def __init__(self, start_position) -> None:
-        super().__init__(start_position)
+    def __init__(self, start_position, edge) -> None:
+        super().__init__(start_position, edge)
         self.load_frames("yellow")
  
     def update(self, **kwargs):
-        if self.start:
-            self.starting(kwargs)
-            return
+        follow_pos = kwargs["pacman"].rect.center
+        follow_pos = follow_pos if \
+                        ((follow_pos[0] - self.rect.center[0]) ** 2 + \
+                        (follow_pos[1] - self.rect.center[1]) ** 2) ** 0.5 \
+                        > UNIT*8 \
+                    else (0, kwargs["windowsize"][1])
 
-        self.update_image(kwargs["pacman"].rect.center[0])
-
-        if self.is_frightened:
-            follow_pos = mirror_point(kwargs["pacman"].rect.center, self.rect.center)
-            self.run_frightened_timer(kwargs)
-        else:
-            match kwargs["game_data"]["ghost_mode"]:
-                case const.GhostMode.SCATTER:
-                    follow_pos = (0, kwargs["windowsize"][1])
-                case const.GhostMode.CHASE:
-                    follow_pos = kwargs["pacman"].rect.center
-        
-        for crossing_rect in kwargs["crossing_rects"]:
-            if self.rect == crossing_rect:
-                self.direct_follow(
-                    follow_pos if
-                        ((follow_pos[0] - self.rect.center[0]) ** 2 +
-                        (follow_pos[1] - self.rect.center[1]) ** 2) ** 0.5
-                        > const.UNIT*8
-                    else (0, kwargs["windowsize"][1]),
-                    kwargs["walls_group"])
-
-        self.movement(const.SPEED(kwargs["game_data"], False, self.is_frightened), kwargs["windowsize"],
-                      kwargs["walls_group"], kwargs["dt"])
+        return super().update(follow_pos, **kwargs)
 
 
 class PacmanDirection(pygame.sprite.Sprite):
@@ -490,7 +446,7 @@ class PacmanDirection(pygame.sprite.Sprite):
         super().__init__()
 
         with as_file(files("pac_man").joinpath(f"resources/pacman/direction.png")) as path:
-            frame = pygame.transform.scale(pygame.image.load(path), (const.UNIT*6, const.UNIT*6))
+            frame = pygame.transform.scale(pygame.image.load(path), (UNIT*6, UNIT*6))
 
         rotations = {'r': 0, 'u': 90, 'l': 180, 'd': 270}
         self.frames = {d: pygame.transform.rotate(frame, angle) for d, angle in rotations.items()}
@@ -502,7 +458,7 @@ class PacmanDirection(pygame.sprite.Sprite):
     def update(self, **kwargs) -> None:
         """Passt sich Pac-Mans Position und gewünschter Richtung an"""
         self.image = self.frames[kwargs["pacman"].try_direction]
-        self.image.set_alpha(255 if kwargs["game_data"]["phase"] == const.Phase.NORMAL else 0)
+        self.image.set_alpha(255 if kwargs["game_data"]["phase"] == Phase.NORMAL else 0)
         self.rect.center = kwargs["pacman"].rect.center
 
 
@@ -513,10 +469,10 @@ class PacmanGun(pygame.sprite.Sprite):
         super().__init__()
 
         with as_file(files("pac_man").joinpath(f"resources/pacman/gun0.png")) as path:
-            orig_img_0 = pygame.transform.scale(pygame.image.load(path), (const.UNIT*4, const.UNIT*4))
+            orig_img_0 = pygame.transform.scale(pygame.image.load(path), (UNIT*4, UNIT*4))
 
         with as_file(files("pac_man").joinpath(f"resources/pacman/gun1.png")) as path:
-            orig_img_1 = pygame.transform.scale(pygame.image.load(path), (const.UNIT*4, const.UNIT*4))
+            orig_img_1 = pygame.transform.scale(pygame.image.load(path), (UNIT*4, UNIT*4))
 
         self.frames = [
             {
@@ -542,7 +498,7 @@ class PacmanGun(pygame.sprite.Sprite):
 
         self.image = self.frames[int(self.shooting)][kwargs["pacman"].try_direction]
         self.image.set_alpha(255 
-            if (kwargs["game_data"]["phase"] == const.Phase.NORMAL
+            if (kwargs["game_data"]["phase"] == Phase.NORMAL
                 and kwargs["game_data"]["darts_left"] > 0
                 and not self.shooting)
             else 0)
@@ -554,7 +510,7 @@ class Pellet(StaticSprite):
     "Elternklasse für Pellets"
 
     def __init__(self, position: tuple[int, int], texture: str):
-        super().__init__(position, texture, (const.UNIT*2, const.UNIT*2), 0)
+        super().__init__(position, texture, (UNIT*2, UNIT*2), 0)
     
     def update(self, **kwargs):
         """Pellet updaten: Löscht sich, wenn von Pac-Man berührt"""
@@ -579,7 +535,7 @@ class PowerPellet(Pellet):
         self.blink_timer = 0.0
     
     def update(self, **kwargs):        
-        if self.blink_timer > const.POWER_PELLET_BLINK_INTERVAL:
+        if self.blink_timer > POWER_PELLET_BLINK_INTERVAL:
             match self.image.get_alpha():
                 case 0:   self.image.set_alpha(255)
                 case 255: self.image.set_alpha(0)
@@ -600,11 +556,11 @@ class Fruit(pygame.sprite.Sprite):
 
         for i in range(6):
             with as_file(files("pac_man").joinpath(f"resources/fruits/{i}.png")) as path:
-                self.frames.append(pygame.transform.scale(pygame.image.load(path), (2*const.UNIT, 2*const.UNIT)))
+                self.frames.append(pygame.transform.scale(pygame.image.load(path), (2*UNIT, 2*UNIT)))
         
         self.image = self.frames[type]
         self.image.set_alpha(0)
-        self.rect = self.image.get_rect(topleft=(position[0]-const.UNIT/2, position[1]))
+        self.rect = self.image.get_rect(topleft=(position[0]-UNIT/2, position[1]))
         self.active = False
         self.points = 0
         self.timer = 0.0
@@ -615,7 +571,7 @@ class Fruit(pygame.sprite.Sprite):
 
         self.image.set_alpha(255 if self.active else 0)
 
-        type, self.points = const.FRUIT_TYPE_AND_POINTS(kwargs["game_data"])
+        type, self.points = FRUIT_TYPE_AND_POINTS(kwargs["game_data"])
         self.image = self.frames[type]
 
 
@@ -625,7 +581,7 @@ class PowerUp(pygame.sprite.Sprite):
         super().__init__()
 
         with as_file(files("pac_man").joinpath(f"resources/powerups/{symbol}.png")) as path:
-            self.image = pygame.transform.scale(pygame.image.load(path), (2*const.UNIT, 2*const.UNIT))
+            self.image = pygame.transform.scale(pygame.image.load(path), (2*UNIT, 2*UNIT))
 
         self.image.set_alpha(0)
         self.rect = self.image.get_rect(topleft=position)
@@ -641,7 +597,7 @@ class PowerUp(pygame.sprite.Sprite):
 
         if self.timer <= 0.0:
             self.active = random() <= self.probability
-            self.timer = const.POWER_UP_INTERVAL
+            self.timer = POWER_UP_INTERVAL
 
         self.timer -= kwargs["dt"]
         self.image.set_alpha(255 if self.active else 0)

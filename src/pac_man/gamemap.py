@@ -1,6 +1,6 @@
 import pygame
 
-from . import const
+from .const import *
 from . import sprites
 
 def load_all(width, height, mapcontent, walls_group, pellets_group, power_pellets_group,
@@ -10,32 +10,32 @@ def load_all(width, height, mapcontent, walls_group, pellets_group, power_pellet
     for y in range(height):
         for x in range(width):
             match mapcontent[y][x]:
-                case '#': walls_group.add(sprites.Wall((x * const.UNIT, y * const.UNIT)))
-                case '-': walls_group.add(sprites.Wall((x * const.UNIT, y * const.UNIT), ghost=True))
-                case '.': pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
-                case '+': crossing_rects.append(pygame.Rect(x * const.UNIT, y * const.UNIT, const.UNIT*2, const.UNIT*2))
+                case '#': walls_group.add(sprites.Wall((x * UNIT, y * UNIT)))
+                case '-': walls_group.add(sprites.Wall((x * UNIT, y * UNIT), ghost=True))
+                case '.': pellets_group.add(sprites.NormalPellet((x * UNIT, y * UNIT)))
+                case '+': crossing_rects.append(pygame.Rect(x * UNIT, y * UNIT, UNIT*2, UNIT*2))
                 case ':':
-                    crossing_rects.append(pygame.Rect(x * const.UNIT, y * const.UNIT, const.UNIT*2, const.UNIT*2))
-                    pp = sprites.PowerPellet((x * const.UNIT, y * const.UNIT))
+                    crossing_rects.append(pygame.Rect(x * UNIT, y * UNIT, UNIT*2, UNIT*2))
+                    pp = sprites.PowerPellet((x * UNIT, y * UNIT))
                     pellets_group.add(pp)
                     power_pellets_group.add(pp)
                 case 'x':
-                    crossing_rects.append(pygame.Rect(x * const.UNIT, y * const.UNIT, const.UNIT*2, const.UNIT*2))
-                    pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
+                    crossing_rects.append(pygame.Rect(x * UNIT, y * UNIT, UNIT*2, UNIT*2))
+                    pellets_group.add(sprites.NormalPellet((x * UNIT, y * UNIT)))
                 case 'o':
-                    fruits_group.add(sprites.Fruit((x * const.UNIT, y * const.UNIT)))
+                    fruits_group.add(sprites.Fruit((x * UNIT, y * UNIT)))
                 case 'e':
-                    powerups_group.add(sprites.ExtraLife((x * const.UNIT, y * const.UNIT)))
-                    pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
+                    powerups_group.add(sprites.ExtraLife((x * UNIT, y * UNIT)))
+                    pellets_group.add(sprites.NormalPellet((x * UNIT, y * UNIT)))
                 case 'g':
-                    powerups_group.add(sprites.Gambler((x * const.UNIT, y * const.UNIT)))
-                    pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
+                    powerups_group.add(sprites.Gambler((x * UNIT, y * UNIT)))
+                    pellets_group.add(sprites.NormalPellet((x * UNIT, y * UNIT)))
                 case 's':
-                    powerups_group.add(sprites.ShadowDash((x * const.UNIT, y * const.UNIT)))
-                    pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
+                    powerups_group.add(sprites.ShadowDash((x * UNIT, y * UNIT)))
+                    pellets_group.add(sprites.NormalPellet((x * UNIT, y * UNIT)))
                 case 'b':
-                    powerups_group.add(sprites.Dart((x * const.UNIT, y * const.UNIT)))
-                    pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
+                    powerups_group.add(sprites.Dart((x * UNIT, y * UNIT)))
+                    pellets_group.add(sprites.NormalPellet((x * UNIT, y * UNIT)))
 
 
 def load_pellets(width, height, mapcontent, pellets_group, power_pellets_group):
@@ -45,8 +45,8 @@ def load_pellets(width, height, mapcontent, pellets_group, power_pellets_group):
         for x in range(width):         
             match mapcontent[y][x]:
                 case '.' | 'x' | 'e' | 'g' | 's' | 'b':
-                    pellets_group.add(sprites.NormalPellet((x * const.UNIT, y * const.UNIT)))
+                    pellets_group.add(sprites.NormalPellet((x * UNIT, y * UNIT)))
                 case ':':
-                    pp = sprites.PowerPellet((x * const.UNIT, y * const.UNIT))
+                    pp = sprites.PowerPellet((x * UNIT, y * UNIT))
                     pellets_group.add(pp)
                     power_pellets_group.add(pp)
