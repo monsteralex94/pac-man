@@ -291,6 +291,7 @@ class Ghost(EntitySprite):
                 and self.frightened_timer > GHOST_TIMEOUT_INTERVAL:
             self.frightened_timer = 0.0
             self.fright_stage = GhostFrightStage.LEAVING_HOUSE
+
         elif self.fright_stage == GhostFrightStage.LEAVING_HOUSE \
                 and self.frightened_timer > GHOST_LEAVING_ARENA_INTERVAL:
             self.frightened_timer = 0.0
