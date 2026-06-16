@@ -99,10 +99,9 @@ def reset_entity_sprites():
     ghost4.set_pos(GHOST4_START_POS)
 
     ghost1.try_direction = 'r'
-    ghost2.start, ghost3.start, ghost4.start = True, True, True
 
     for ghost in ghosts_group:
-        ghost.fright_stage = GhostFrightStage.LEAVING_ARENA
+        ghost.fright_stage = GhostFrightStage.LEAVING_HOUSE
         ghost.update_image(pacman.rect.center[0])
 
     pacman.set_pos(PACMAN_START_POS)
@@ -134,8 +133,10 @@ def normal_phase(dt):
     for power_pellet in power_pellets_group:
         if pacman.hitbox.colliderect(power_pellet.rect):
             for ghost in ghosts_group:
-                ghost.fright_stage = GhostFrightStage.FRIGHTENED
-                ghost.frightened_timer = 0.0
+                if ghost.fright_stage not in (GhostFrightStage.LEAVING_HOUSE, GhostFrightStage.TIMEOUT):
+                    ghost.fright_stage = GhostFrightStage.FRIGHTENED
+                    ghost.frightened_timer = 0.0
+
             game_data["frightened_ghosts_eaten"] = 0
     
     for fruit in fruits_group:
@@ -220,7 +221,7 @@ def death_phase(dt):
         reset_entity_sprites()
         game_data["lives"] -= 1
         for ghost in ghosts_group:
-            ghost.fright_stage = GhostFrightStage.LEAVING_ARENA
+            ghost.fright_stage = GhostFrightStage.LEAVING_HOUSE
             ghost.update_image(pacman.rect.center[0])
         phase_timer = READY_INTERVAL
         game_data["phase"] = Phase.READY
@@ -320,28 +321,28 @@ while game_data["phase"] != Phase.EXIT:
     sd_num = font.render(str(game_data["shadow_dashes_left"]), True, (255, 255, 255))
     SCREEN.blit(sd_num, sd_num.get_rect(topleft=(25 * UNIT, (WINHEIGHT-4)*UNIT)))
 
-    # Pac-Mans übrige Kugeln
+    # Pac-Mans übrige Darts
     SCREEN.blit(dart_texture, pygame.Rect(11 * UNIT*2, (WINHEIGHT-2)*UNIT, UNIT*2, UNIT*2))
     darts_num = font.render(str(game_data["darts_left"]), True, (255, 255, 255))
     SCREEN.blit(darts_num, darts_num.get_rect(topleft=(25 * UNIT, (WINHEIGHT-2)*UNIT)))
 
     # Aktuelle Punktzahl, Highscore und Level
     score_text = font.render("SCORE", True, (255, 255, 255))
-    SCREEN.blit(score_text, score_text.get_rect(topleft=(WINWIDTHPX*0.01, (WINHEIGHT-5)*UNIT)))
+    SCREEN.blit(score_text, score_text.get_rect(topleft=(WINWIDTHPX*0.03, (WINHEIGHT-5)*UNIT)))
 
     score_num = font.render(str(game_data["score"]), True, (255, 255, 255))
-    SCREEN.blit(score_num, score_num.get_rect(topleft=(WINWIDTHPX*0.01, (WINHEIGHT-3)*UNIT)))
+    SCREEN.blit(score_num, score_num.get_rect(topleft=(WINWIDTHPX*0.03, (WINHEIGHT-3)*UNIT)))
 
     highscore_text = font.render("HIGHSCORE", True, (255, 255, 255))
-    SCREEN.blit(highscore_text, highscore_text.get_rect(topleft=(WINWIDTHPX*0.2, (WINHEIGHT-5)*UNIT)))
+    SCREEN.blit(highscore_text, highscore_text.get_rect(topleft=(WINWIDTHPX*0.22, (WINHEIGHT-5)*UNIT)))
 
     highscore_num = font.render(str(highscore) if highscore != float('inf') else '-', True, (255, 255, 255))
-    SCREEN.blit(highscore_num, highscore_num.get_rect(topleft=(WINWIDTHPX*0.2, (WINHEIGHT-3)*UNIT)))
+    SCREEN.blit(highscore_num, highscore_num.get_rect(topleft=(WINWIDTHPX*0.22, (WINHEIGHT-3)*UNIT)))
 
     level_text = font.render("LEVEL", True, (255, 255, 255))
-    SCREEN.blit(level_text, level_text.get_rect(topleft=(WINWIDTHPX*0.5, (WINHEIGHT-5)*UNIT)))
+    SCREEN.blit(level_text, level_text.get_rect(topleft=(WINWIDTHPX*0.52, (WINHEIGHT-5)*UNIT)))
 
     level_num = font.render(str(game_data['level']), True, (255, 255, 255))
-    SCREEN.blit(level_num, level_num.get_rect(topleft=(WINWIDTHPX*0.5, (WINHEIGHT-3)*UNIT)))
+    SCREEN.blit(level_num, level_num.get_rect(topleft=(WINWIDTHPX*0.52, (WINHEIGHT-3)*UNIT)))
 
     pygame.display.flip()

@@ -17,7 +17,7 @@ class GhostFrightStage(IntEnum):
     UNFRIGHTENED = 0
     FRIGHTENED = 1
     TIMEOUT = 2
-    LEAVING_ARENA = 3
+    LEAVING_HOUSE = 3
 
 
 def GHOST_MODE_INTERVAL(game_data):
@@ -64,7 +64,7 @@ def SPEED(game_data, is_pacman, fright_stage=0):
             case GhostFrightStage.UNFRIGHTENED:  return speed
             case GhostFrightStage.FRIGHTENED:    return speed * 0.6
             case GhostFrightStage.TIMEOUT:       return 0.0
-            case GhostFrightStage.LEAVING_ARENA: return speed
+            case GhostFrightStage.LEAVING_HOUSE: return speed
             case _: return 0.0
 
 

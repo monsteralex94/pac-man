@@ -258,7 +258,7 @@ class Ghost(EntitySprite):
     def __init__(self, start_position, edge) -> None:
         super().__init__(start_position)
 
-        self.fright_stage = GhostFrightStage.LEAVING_ARENA
+        self.fright_stage = GhostFrightStage.LEAVING_HOUSE
         self.frightened_timer = 0.0
         self.edge = edge
 
@@ -290,8 +290,8 @@ class Ghost(EntitySprite):
         elif self.fright_stage == GhostFrightStage.TIMEOUT \
                 and self.frightened_timer > GHOST_TIMEOUT_INTERVAL:
             self.frightened_timer = 0.0
-            self.fright_stage = GhostFrightStage.LEAVING_ARENA
-        elif self.fright_stage == GhostFrightStage.LEAVING_ARENA \
+            self.fright_stage = GhostFrightStage.LEAVING_HOUSE
+        elif self.fright_stage == GhostFrightStage.LEAVING_HOUSE \
                 and self.frightened_timer > GHOST_LEAVING_ARENA_INTERVAL:
             self.frightened_timer = 0.0
             self.fright_stage = GhostFrightStage.UNFRIGHTENED
@@ -303,7 +303,6 @@ class Ghost(EntitySprite):
         self.set_pos(GHOST3_START_POS)
         self.fright_stage = GhostFrightStage.TIMEOUT
         self.frightened_timer = 0.0
-        self.start = True
         self.try_direction = 'u'
 
     def direct_follow(self, follow_pos, walls_group):
@@ -349,7 +348,7 @@ class Ghost(EntitySprite):
                     case GhostMode.CHASE:
                         pass
             
-            case GhostFrightStage.LEAVING_ARENA:
+            case GhostFrightStage.LEAVING_HOUSE:
                 self.try_direction = 'u'
         
         if self.fright_stage in (GhostFrightStage.UNFRIGHTENED, GhostFrightStage.FRIGHTENED):
@@ -361,7 +360,7 @@ class Ghost(EntitySprite):
         if self.fright_stage != GhostFrightStage.TIMEOUT:
             self.movement(SPEED(kwargs["game_data"], False, self.fright_stage) + speed_add,
                           kwargs["windowsize"], kwargs["walls_group"], kwargs["dt"],
-                          self.fright_stage == GhostFrightStage.LEAVING_ARENA)
+                          self.fright_stage == GhostFrightStage.LEAVING_HOUSE)
 
 
 class Ghost1(Ghost):
@@ -593,7 +592,9 @@ class PowerUp(pygame.sprite.Sprite):
         self.to_level    = to_level
 
     def update(self, **kwargs):
-        if not (self.from_level <= kwargs["game_data"]["level"] <= self.to_level): return
+        if not (self.from_level <= kwargs["game_data"]["level"] <= self.to_level):
+            self.active = False
+            return
 
         if self.timer <= 0.0:
             self.active = random() <= self.probability
