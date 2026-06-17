@@ -64,7 +64,7 @@ if HIGHSCORE_PATH.exists():
     with open(HIGHSCORE_PATH) as file:
         highscore = int(file.read())
 else:
-    highscore = float('-inf')
+    highscore = None
 
 # Daten während des Spiels
 game_data = {}
@@ -159,7 +159,7 @@ def normal_phase(dt):
                     phase_timer = DEATH_INTERVAL
                     game_data["phase"] = Phase.DEATH
                 else:
-                    if game_data["score"] > highscore:
+                    if not highscore or game_data["score"] > highscore:
                         highscore = game_data["score"]
                         with open(HIGHSCORE_PATH, "w") as file:
                             file.write(str(highscore))
@@ -336,7 +336,7 @@ while game_data["phase"] != Phase.EXIT:
     highscore_text = font.render("HIGHSCORE", True, (255, 255, 255))
     SCREEN.blit(highscore_text, highscore_text.get_rect(topleft=(WINWIDTHPX*0.22, (WINHEIGHT-5)*UNIT)))
 
-    highscore_num = font.render(str(highscore) if highscore != float('inf') else '-', True, (255, 255, 255))
+    highscore_num = font.render(str(highscore) if highscore else '-', True, (255, 255, 255))
     SCREEN.blit(highscore_num, highscore_num.get_rect(topleft=(WINWIDTHPX*0.22, (WINHEIGHT-3)*UNIT)))
 
     level_text = font.render("LEVEL", True, (255, 255, 255))
