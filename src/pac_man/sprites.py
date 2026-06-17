@@ -625,7 +625,7 @@ class Gambler(PowerUp):
         super().__init__(position, "gambler", 0.2, 2, float('inf'))
 
     def when_hit(self, game_data):
-        game_data["score"] += 3000 if random() <= 0.2 else -500
+        game_data["score"] += 2000 if random() <= 0.2 else -500
 
 
 class ShadowDash(PowerUp):
